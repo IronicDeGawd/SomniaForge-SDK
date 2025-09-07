@@ -1,0 +1,7 @@
+{
+  "GameContractsModule#GameEconomy": "0x7652BdB7C63a6cB444ADbbA6A1a0E374bB08B9ba",
+  "GameContractsModule#GameSession": "0xe9eB0c180091a1f26516974462B3b10245F00273",
+  "GameContractsModule#PlayerRegistry": "0x4269E78C9e276C451B06e9F00C44baa638C8CcCD",
+  "GameContractsModule#Leaderboard": "0x9C0056b7F0B10E8865e2436fC0fa0d7734041967",
+  "GameContractsModule#MultiplayerGame": "0x76B7Adc0364037605cdB0363B5E6a87F2042a194"
+}
