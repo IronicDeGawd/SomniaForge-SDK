@@ -1,0 +1,54 @@
+{
+  "name": "@somnia/game-sdk",
+  "version": "1.0.0",
+  "description": "TypeScript SDK for building games on Somnia Network",
+  "main": "dist/index.js",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "scripts": {
+    "dev": "vite build --mode development --watch",
+    "build": "vite build && tsc --emitDeclarationOnly --declaration --outDir dist",
+    "test": "vitest",
+    "test:coverage": "vitest --coverage",
+    "type-check": "tsc --noEmit"
+  },
+  "keywords": [
+    "blockchain",
+    "gaming",
+    "somnia",
+    "web3",
+    "sdk",
+    "typescript"
+  ],
+  "author": "SomniaGameSDK",
+  "license": "MIT",
+  "dependencies": {
+    "viem": "^2.21.0",
+    "ws": "^8.18.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.16.10",
+    "@types/ws": "^8.5.12",
+    "@vitest/coverage-v8": "^2.0.5",
+    "terser": "^5.44.0",
+    "typescript": "^5.3.3",
+    "vite": "^5.4.8",
+    "vite-plugin-dts": "^4.2.1",
+    "vitest": "^2.0.5"
+  },
+  "peerDependencies": {
+    "typescript": "^5.0.0"
+  },
+  "files": [
+    "dist",
+    "src",
+    "README.md"
+  ]
+}
