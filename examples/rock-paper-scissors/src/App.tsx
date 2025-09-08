@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react'
 import { SomniaGameSDK } from '@somnia/game-sdk'
+import { GameSessionManager } from '@somnia/game-sdk'
 import { detectAvailableWallets, getWalletConnectionInstructions, switchToSomniaNetwork, addSomniaNetwork } from './utils/walletDetection'
 import './App.css'
 
 type Move = 'rock' | 'paper' | 'scissors' | null
-type GameState = 'disconnected' | 'connecting' | 'connected' | 'creating' | 'waiting' | 'playing' | 'revealing' | 'finished' | 'demo'
+type GameState = 'disconnected' | 'connecting' | 'connected' | 'creating' | 'waiting' | 'playing' | 'revealing' | 'finished'
 
 interface GameSession {
   sessionId: string
@@ -81,16 +82,6 @@ function App() {
     }
   }
 
-  const startDemoMode = () => {
-    // Reset all modal states
-    setShowWalletSelector(false)
-    setShowWalletInstructions(false)
-    setError('')
-    
-    setAccount('0x1234...5678')
-    setBalance('1.2345')
-    setGameState('demo')
-  }
 
   const showWalletOptions = async () => {
     try {
@@ -107,6 +98,33 @@ function App() {
   const closeWalletSelector = () => {
     setShowWalletSelector(false)
     setAvailableWallets([])
+  }
+
+  const addSomniaNetworkAutomatically = async () => {
+    try {
+      setError('')
+      const wallets = await detectAvailableWallets()
+      const bestWallet = wallets.find(w => 
+        w.name.toLowerCase().includes('metamask') && !w.provider.isBraveWallet
+      ) || wallets.find(w => 
+        w.provider.isMetaMask && !w.provider.isBraveWallet && !w.provider.isPhantom
+      ) || wallets[0]
+      
+      if (!bestWallet) {
+        setError('No compatible wallet found. Please install MetaMask first.')
+        return
+      }
+      
+      await addSomniaNetwork(bestWallet.provider)
+      setError('Somnia Network added successfully! You can now connect your wallet.')
+      
+    } catch (err: any) {
+      if (err.code === 4001) {
+        setError('Network addition rejected. Please approve the network addition in your wallet.')
+      } else {
+        setError(`Failed to add network: ${err.message}`)
+      }
+    }
   }
 
   const connectSpecificWallet = async (wallet: any) => {
@@ -171,7 +189,11 @@ function App() {
       setError('')
       
       const entryFee = BigInt(10**15) // 0.001 STT
-      const sessionId = await sdk.gameSession.createSession(2, entryFee, 600)
+      const sessionId = await sdk.gameSession.createSession({
+        maxPlayers: 2,
+        entryFee,
+        moveTimeLimit: 600
+      })
       
       setCurrentSession({
         sessionId: sessionId.toString(),
@@ -192,9 +214,8 @@ function App() {
     
     try {
       setError('')
-      const entryFee = BigInt(10**15) // 0.001 STT
       
-      await sdk.gameSession.joinSession(BigInt(sessionId), entryFee)
+      await sdk.gameSession.joinSession(BigInt(sessionId))
       
       setCurrentSession({
         sessionId,
@@ -216,8 +237,8 @@ function App() {
       setError('')
       setSelectedMove(move)
       
-      // Create move hash (simplified - in production use proper commit-reveal)
-      const moveHash = `0x${Buffer.from(`${account}_${move}_${nonce}`).toString('hex').slice(0, 64)}`
+      // Create move hash using SDK method
+      const moveHash = GameSessionManager.createMoveHash(move, nonce.toString())
       
       await sdk.gameSession.submitMove(BigInt(currentSession.sessionId), moveHash as `0x${string}`)
       
@@ -286,26 +307,22 @@ function App() {
       </header>
 
       <main className="main">
-        {error && (
-          <div className="error">
-            <p>{error}</p>
-            <button onClick={() => setError('')}>Dismiss</button>
-          </div>
-        )}
-
         {gameState === 'disconnected' && (
           <div className="game-section">
+            {error && (
+              <div className="error">
+                <p>{error}</p>
+                <button onClick={() => setError('')}>Dismiss</button>
+              </div>
+            )}
             <h2>Connect Your Wallet</h2>
             <p>Connect to Somnia Network to start playing!</p>
-            <div className="button-group">
+            <div className="button-group-horizontal">
               <button onClick={connectBestWallet} className="primary-button">
                 Connect Wallet
               </button>
               <button onClick={showWalletOptions} className="secondary-button">
                 Choose Wallet
-              </button>
-              <button onClick={startDemoMode} className="demo-button">
-                Try Demo Mode
               </button>
               <div className="demo-info">
                 {showWalletInstructions ? (
@@ -325,16 +342,16 @@ function App() {
                   </>
                 ) : (
                   <>
-                    <p><strong>Setup Instructions:</strong></p>
+                    <p><strong>Quick Setup:</strong></p>
                     <p>1. Install <a href="https://metamask.io" target="_blank" rel="noopener">MetaMask</a> browser extension</p>
-                    <p>2. Add Somnia Network:</p>
-                    <ul style={{textAlign: 'left', display: 'inline-block'}}>
-                      <li>Network Name: Somnia Network</li>
-                      <li>RPC URL: https://dream-rpc.somnia.network</li>
-                      <li>Chain ID: 50312</li>
-                      <li>Currency: STT</li>
-                      <li>Explorer: https://shannon-explorer.somnia.network</li>
-                    </ul>
+                    <p>2. Add Somnia Network automatically:</p>
+                    <button 
+                      onClick={addSomniaNetworkAutomatically}
+                      className="primary-button"
+                      style={{margin: '1rem 0', fontSize: '1rem', padding: '0.8rem 1.5rem'}}
+                    >
+                      🌐 Add Somnia Network
+                    </button>
                     <p>3. Get test tokens from <a href="https://discord.com/invite/somnia" target="_blank" rel="noopener">Somnia Discord</a></p>
                   </>
                 )}
@@ -374,7 +391,7 @@ function App() {
           </div>
         )}
 
-        {(gameState === 'connected' || gameState === 'demo') && (
+        {gameState === 'connected' && (
           <div className="game-section">
             <h2>Ready to Play!</h2>
             <p>Create a new game or join an existing one</p>

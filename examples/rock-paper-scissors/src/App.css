@@ -119,8 +119,18 @@ body, html {
 .button-group {
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: 1rem;
   margin: 2rem 0;
+  align-items: center;
+}
+
+.button-group-horizontal {
+  display: flex;
+  flex-direction: row;
+  gap: 1rem;
+  margin: 2rem 0;
+  justify-content: center;
+  flex-wrap: wrap;
 }
 
 .join-game {
@@ -348,59 +358,7 @@ code {
   animation: fadeIn 0.5s ease-out;
 }
 
-.demo-info {
-  background: #f8f9fa;
-  border: 2px solid #dee2e6;
-  border-radius: 12px;
-  padding: 1.5rem;
-  margin-top: 1rem;
-  text-align: left;
-}
 
-.demo-info p {
-  margin: 0.5rem 0;
-  color: #495057;
-}
-
-.demo-info ul {
-  margin: 0.5rem 0;
-  padding-left: 1.5rem;
-}
-
-.demo-info li {
-  margin: 0.25rem 0;
-  color: #6c757d;
-  font-size: 0.9rem;
-}
-
-.demo-info a {
-  color: #667eea;
-  text-decoration: none;
-  font-weight: 600;
-}
-
-.demo-info a:hover {
-  text-decoration: underline;
-}
-
-.demo-button {
-  background: #ffa726;
-  color: white;
-  border: none;
-  padding: 1rem 2rem;
-  border-radius: 50px;
-  font-size: 1.1rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  box-shadow: 0 4px 15px rgba(255, 167, 38, 0.4);
-}
-
-.demo-button:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(255, 167, 38, 0.6);
-  background: #ff9800;
-}
 
 .secondary-button {
   background: #6c757d;
