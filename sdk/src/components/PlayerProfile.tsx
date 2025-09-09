@@ -40,26 +40,37 @@ export interface PlayerProfileProps {
   /** Player statistics */
   stats?: PlayerStats
   /** Visual style variant */
-  variant?: 'full' | 'compact' | 'minimal'
+  variant?: 'card' | 'inline' | 'detailed'
   /** Whether to show statistics */
   showStats?: boolean
   /** Whether to show avatar */
   showAvatar?: boolean
   /** Function called when edit button is clicked */
   onEdit?: () => void
+  /** Player achievements */
+  achievements?: Array<{
+    name: string
+    description: string
+    isUnlocked: boolean
+  }>
+  /** Whether to show achievements */
+  showAchievements?: boolean
   /** Additional CSS classes */
   onEditProfile?: () => void
   className?: string
 }
 
 export const PlayerProfile: React.FC<PlayerProfileProps> = ({
-  username,
-  address,
+  playerAddress,
+  playerName,
   avatar,
   stats,
-  achievements = [],
   variant = 'card',
+  showStats = true,
+  showAvatar = true,
+  achievements = [],
   showAchievements = true,
+  onEdit,
   onEditProfile,
   className = '',
 }) => {
@@ -99,12 +110,13 @@ export const PlayerProfile: React.FC<PlayerProfileProps> = ({
     }
   }
 
-  const formatAddress = (addr: string) => {
+  const formatAddress = (addr?: string) => {
+    if (!addr) return 'No address'
     return `${addr.slice(0, 6)}...${addr.slice(-4)}`
   }
 
   const getExperiencePercentage = () => {
-    if (stats.nextLevelExp === 0) return 100
+    if (!stats || stats.nextLevelExp === 0) return 100
     return Math.min((stats.experience / stats.nextLevelExp) * 100, 100)
   }
 
@@ -132,7 +144,7 @@ export const PlayerProfile: React.FC<PlayerProfileProps> = ({
       border: `3px solid ${SomniaColors.white}`,
       boxShadow: SomniaTheme.shadow.md,
     }}>
-      {!avatar && username.charAt(0).toUpperCase()}
+      {!avatar && playerName?.charAt(0).toUpperCase()}
     </div>
   )
 
@@ -158,19 +170,19 @@ export const PlayerProfile: React.FC<PlayerProfileProps> = ({
             fontWeight: SomniaTheme.fontWeight.bold,
             color: SomniaColors.gray[900],
           }}>
-            {username}
+            {playerName}
           </h3>
           
           {/* Level Badge */}
           <div style={{
-            background: getLevelColor(stats.level),
+            background: getLevelColor(stats?.level || 1),
             color: SomniaColors.white,
             padding: `${SomniaTheme.spacing.xs} ${SomniaTheme.spacing.sm}`,
             borderRadius: SomniaTheme.borderRadius.full,
             fontSize: SomniaTheme.fontSize.xs,
             fontWeight: SomniaTheme.fontWeight.bold,
           }}>
-            LVL {stats.level}
+            LVL {stats?.level || 1}
           </div>
         </div>
         
@@ -179,7 +191,7 @@ export const PlayerProfile: React.FC<PlayerProfileProps> = ({
           color: SomniaColors.gray[600],
           fontFamily: 'monospace',
         }}>
-          {formatAddress(address)}
+          {formatAddress(playerAddress)}
         </div>
 
         {variant !== 'inline' && (
@@ -201,7 +213,7 @@ export const PlayerProfile: React.FC<PlayerProfileProps> = ({
                 fontWeight: SomniaTheme.fontWeight.semibold,
                 color: SomniaColors.gray[900],
               }}>
-                {stats.experience} / {stats.nextLevelExp}
+                {stats?.experience || 0} / {stats?.nextLevelExp || 100}
               </span>
             </div>
             
@@ -216,7 +228,7 @@ export const PlayerProfile: React.FC<PlayerProfileProps> = ({
               <div style={{
                 width: `${getExperiencePercentage()}%`,
                 height: '100%',
-                background: getLevelColor(stats.level),
+                background: getLevelColor(stats?.level || 1),
                 transition: 'width 0.3s ease-in-out',
               }} />
             </div>
@@ -247,12 +259,12 @@ export const PlayerProfile: React.FC<PlayerProfileProps> = ({
     if (variant === 'inline') return null
 
     const statItems = [
-      { label: 'Games Played', value: stats.totalGames },
-      { label: 'Games Won', value: stats.gamesWon },
-      { label: 'Win Rate', value: `${Math.round(stats.winRate)}%` },
-      { label: 'Current Streak', value: stats.currentWinStreak },
-      { label: 'Best Streak', value: stats.bestWinStreak },
-      { label: 'Total Earnings', value: `${stats.totalEarnings} STT` },
+      { label: 'Games Played', value: stats?.totalGames || 0 },
+      { label: 'Games Won', value: stats?.gamesWon || 0 },
+      { label: 'Win Rate', value: `${Math.round(stats?.winRate || 0)}%` },
+      { label: 'Current Streak', value: stats?.currentWinStreak || 0 },
+      { label: 'Best Streak', value: stats?.bestWinStreak || 0 },
+      { label: 'Total Earnings', value: `${stats?.totalEarnings || '0'} STT` },
     ]
 
     return (
@@ -310,7 +322,7 @@ export const PlayerProfile: React.FC<PlayerProfileProps> = ({
           fontWeight: SomniaTheme.fontWeight.semibold,
           color: SomniaColors.gray[900],
         }}>
-          Achievements ({achievements.filter(a => a.isUnlocked).length}/{achievements.length})
+          Achievements ({achievements.filter((a: any) => a.isUnlocked).length}/{achievements.length})
         </h4>
         
         <div style={{
@@ -318,7 +330,7 @@ export const PlayerProfile: React.FC<PlayerProfileProps> = ({
           flexWrap: 'wrap',
           gap: SomniaTheme.spacing.sm,
         }}>
-          {achievements.map((achievement, index) => (
+          {achievements.map((achievement: any, index: number) => (
             <div key={index} style={{
               padding: `${SomniaTheme.spacing.sm} ${SomniaTheme.spacing.md}`,
               borderRadius: SomniaTheme.borderRadius.lg,

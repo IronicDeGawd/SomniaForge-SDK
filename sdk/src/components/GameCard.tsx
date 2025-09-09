@@ -181,7 +181,7 @@ export const GameCard: React.FC<GameCardProps> = ({
         alignItems: 'flex-start',
         marginBottom: SomniaTheme.spacing.md,
       }}>
-        <div style={getStatusStyles(status)}>
+        <div style={getStatusStyles(status || 'waiting')}>
           {status}
         </div>
         {gameId && (
