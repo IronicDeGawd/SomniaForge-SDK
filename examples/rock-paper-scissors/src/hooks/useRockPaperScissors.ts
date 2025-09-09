@@ -1,8 +1,8 @@
 import { useState, useEffect, useCallback } from 'react'
-import { SomniaGameSDK, RPSMove, RPSGameResult, RockPaperScissorsManager } from '@somniaforge/sdk'
+import { SomniaGameSDK } from '@somniaforge/sdk'
 import { parseEther } from 'viem'
-
-type GameState = 'idle' | 'creating' | 'joining' | 'waiting' | 'committing' | 'revealing' | 'finished'
+import { RockPaperScissorsManager } from '../managers/RockPaperScissorsManager'
+import { RPSMove, RPSGameResult, GameState } from '../types/rockPaperScissors'
 
 export function useRockPaperScissors(sdk: SomniaGameSDK | null) {
   const [gameState, setGameState] = useState<GameState>('idle')
@@ -12,6 +12,17 @@ export function useRockPaperScissors(sdk: SomniaGameSDK | null) {
   const [error, setError] = useState<string>('')
   const [revealDeadline, setRevealDeadline] = useState<number>(0)
   const [playerMoves, setPlayerMoves] = useState<Map<string, { committed: boolean, revealed: boolean }>>(new Map())
+  
+  const [rpsManager] = useState(() => new RockPaperScissorsManager())
+
+  useEffect(() => {
+    if (sdk && sdk.wallet.isConnected()) {
+      const walletClient = sdk.wallet.getWalletClient()
+      if (walletClient) {
+        rpsManager.connectWallet(walletClient)
+      }
+    }
+  }, [sdk, rpsManager])
 
   const createGame = useCallback(async (entryFeeETH: string = '0.01') => {
     if (!sdk) return
@@ -21,14 +32,14 @@ export function useRockPaperScissors(sdk: SomniaGameSDK | null) {
       setError('')
       
       const entryFee = parseEther(entryFeeETH)
-      const sessionId = await sdk.rockPaperScissors.createRPSGame(entryFee)
+      const sessionId = await rpsManager.createRPSGame(entryFee)
       setCurrentSession(sessionId.toString())
       setGameState('waiting')
     } catch (err) {
       setError(`Failed to create game: ${err}`)
       setGameState('idle')
     }
-  }, [sdk])
+  }, [sdk, rpsManager])
 
   const joinGame = useCallback(async (sessionId: string, entryFeeETH: string = '0.01') => {
     if (!sdk) return
@@ -38,14 +49,14 @@ export function useRockPaperScissors(sdk: SomniaGameSDK | null) {
       setError('')
       
       const entryFee = parseEther(entryFeeETH)
-      await sdk.rockPaperScissors.joinRPSGame(BigInt(sessionId), entryFee)
+      await rpsManager.joinRPSGame(BigInt(sessionId), entryFee)
       setCurrentSession(sessionId)
       setGameState('waiting')
     } catch (err) {
       setError(`Failed to join game: ${err}`)
       setGameState('idle')
     }
-  }, [sdk])
+  }, [sdk, rpsManager])
 
   const commitMove = useCallback(async (move: 'rock' | 'paper' | 'scissors', nonce?: bigint) => {
     if (!sdk || !currentSession) return
@@ -67,7 +78,7 @@ export function useRockPaperScissors(sdk: SomniaGameSDK | null) {
       // Create move hash using the manager's static method
       const moveHash = RockPaperScissorsManager.createMoveHash(account, rpsMove, moveNonce)
       
-      await sdk.rockPaperScissors.commitMove(BigInt(currentSession), moveHash)
+      await rpsManager.commitMove(BigInt(currentSession), moveHash)
       
       // Store nonce for reveal phase (in a real app, this should be stored securely)
       ;(window as unknown as { gameNonce: bigint }).gameNonce = moveNonce
@@ -94,7 +105,7 @@ export function useRockPaperScissors(sdk: SomniaGameSDK | null) {
         throw new Error('Move data not found. Please commit a move first.')
       }
       
-      await sdk.rockPaperScissors.revealMove(BigInt(currentSession), storedMove, storedNonce)
+      await rpsManager.revealMove(BigInt(currentSession), storedMove, storedNonce)
       
       // Game result will be updated via WebSocket events or polling
       setTimeout(() => {
@@ -111,7 +122,7 @@ export function useRockPaperScissors(sdk: SomniaGameSDK | null) {
     
     try {
       setError('')
-      await sdk.rockPaperScissors.forceResolveGame(BigInt(currentSession))
+      await rpsManager.forceResolveGame(BigInt(currentSession))
       setTimeout(() => {
         checkGameResult()
       }, 2000)
@@ -124,7 +135,7 @@ export function useRockPaperScissors(sdk: SomniaGameSDK | null) {
     if (!sdk || !currentSession) return
     
     try {
-      const result = await sdk.rockPaperScissors.getGameResult(BigInt(currentSession))
+      const result = await rpsManager.getGameResult(BigInt(currentSession))
       setGameResult(result)
       setGameState('finished')
     } catch (err) {
@@ -137,7 +148,7 @@ export function useRockPaperScissors(sdk: SomniaGameSDK | null) {
     if (!sdk || !currentSession) return
     
     try {
-      const deadline = await sdk.rockPaperScissors.getRevealDeadline(BigInt(currentSession))
+      const deadline = await rpsManager.getRevealDeadline(BigInt(currentSession))
       setRevealDeadline(Number(deadline) * 1000) // Convert to milliseconds
     } catch (err) {
       console.log('Could not get reveal deadline:', err)
@@ -149,11 +160,11 @@ export function useRockPaperScissors(sdk: SomniaGameSDK | null) {
     
     try {
       setError('')
-      await sdk.rockPaperScissors.withdraw()
+      await rpsManager.withdraw()
     } catch (err) {
       setError(`Failed to withdraw: ${err}`)
     }
-  }, [sdk])
+  }, [sdk, rpsManager])
 
   const resetGame = useCallback(() => {
     setGameState('idle')
