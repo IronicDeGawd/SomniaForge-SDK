@@ -70,8 +70,8 @@ export function useRockPaperScissors(sdk: SomniaGameSDK | null) {
       await sdk.rockPaperScissors.commitMove(BigInt(currentSession), moveHash)
       
       // Store nonce for reveal phase (in a real app, this should be stored securely)
-      ;(window as any).gameNonce = moveNonce
-      ;(window as any).gameMove = rpsMove
+      ;(window as unknown as { gameNonce: bigint }).gameNonce = moveNonce
+      ;(window as unknown as { gameMove: RPSMove }).gameMove = rpsMove
       
       setGameState('revealing')
     } catch (err) {
@@ -87,8 +87,8 @@ export function useRockPaperScissors(sdk: SomniaGameSDK | null) {
       setError('')
       
       // Retrieve stored move and nonce
-      const storedMove = (window as any).gameMove as RPSMove
-      const storedNonce = (window as any).gameNonce as bigint
+      const storedMove = (window as unknown as { gameMove: RPSMove }).gameMove
+      const storedNonce = (window as unknown as { gameNonce: bigint }).gameNonce
       
       if (!storedMove || !storedNonce) {
         throw new Error('Move data not found. Please commit a move first.')
@@ -104,7 +104,7 @@ export function useRockPaperScissors(sdk: SomniaGameSDK | null) {
     } catch (err) {
       setError(`Failed to reveal move: ${err}`)
     }
-  }, [sdk, currentSession])
+  }, [sdk, currentSession, checkGameResult])
 
   const forceResolveGame = useCallback(async () => {
     if (!sdk || !currentSession) return
@@ -118,7 +118,7 @@ export function useRockPaperScissors(sdk: SomniaGameSDK | null) {
     } catch (err) {
       setError(`Failed to force resolve game: ${err}`)
     }
-  }, [sdk, currentSession])
+  }, [sdk, currentSession, checkGameResult])
 
   const checkGameResult = useCallback(async () => {
     if (!sdk || !currentSession) return
@@ -165,8 +165,8 @@ export function useRockPaperScissors(sdk: SomniaGameSDK | null) {
     setPlayerMoves(new Map())
     
     // Clear stored move data
-    delete (window as any).gameNonce
-    delete (window as any).gameMove
+    delete (window as unknown as { gameNonce?: bigint }).gameNonce
+    delete (window as unknown as { gameMove?: RPSMove }).gameMove
   }, [])
 
   // Effect to set up WebSocket event listeners
@@ -183,12 +183,13 @@ export function useRockPaperScissors(sdk: SomniaGameSDK | null) {
             console.log('🎮 RPS Game Event:', event.eventName, event.args)
             
             switch (event.eventName) {
-              case 'PlayerJoined':
+              case 'PlayerJoined': {
                 const playerCount = event.args.playerCount as number
                 if (playerCount === 2) {
                   setGameState('committing')
                 }
                 break
+              }
                 
               case 'MoveCommitted':
                 console.log('Move committed by:', event.args.player)
@@ -203,11 +204,12 @@ export function useRockPaperScissors(sdk: SomniaGameSDK | null) {
                 })
                 break
                 
-              case 'RevealPhaseStarted':
+              case 'RevealPhaseStarted': {
                 const deadline = Number(event.args.deadline) * 1000
                 setRevealDeadline(deadline)
                 setGameState('revealing')
                 break
+              }
                 
               case 'MoveRevealed':
                 console.log('Move revealed by:', event.args.player)

@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react'
 import { 
   SomniaGameSDK, 
-  WalletConnectButton,
   SomniaButton,
   GameCard,
   SomniaColors,
@@ -75,8 +74,8 @@ function App() {
       if (chainIdNumber !== 50312) {
         try {
           await switchToSomniaNetwork(provider)
-        } catch (switchError: any) {
-          if (switchError.code === 4902) {
+        } catch (switchError: unknown) {
+          if ((switchError as { code: number }).code === 4902) {
             await addSomniaNetwork(provider)
             await switchToSomniaNetwork(provider)
           } else {
@@ -98,8 +97,9 @@ function App() {
       const balanceEth = (balanceWei / 1e18).toFixed(4)
       setBalance(balanceEth)
       
-    } catch (err: any) {
-      setError(`Connection failed: ${err.message || err}`)
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err)
+      setError(`Connection failed: ${message}`)
       setConnectionState('disconnected')
     } finally {
       setIsConnecting(false)

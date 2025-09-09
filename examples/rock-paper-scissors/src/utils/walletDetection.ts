@@ -8,12 +8,12 @@ interface EIP6963ProviderInfo {
 
 interface EIP6963ProviderDetail {
   info: EIP6963ProviderInfo
-  provider: any
+  provider: unknown
 }
 
 interface WalletProvider {
   name: string
-  provider: any
+  provider: unknown
   isAvailable: boolean
 }
 
@@ -49,11 +49,11 @@ export const detectAvailableWallets = async (): Promise<WalletProvider[]> => {
   }
 
   // Legacy detection for wallets that don't support EIP-6963
-  const ethereum = (window as any).ethereum
+  const ethereum = (window as unknown as { ethereum?: unknown }).ethereum
 
   if (ethereum) {
     // Check for MetaMask specifically
-    if (ethereum.isMetaMask && !wallets.some(w => w.name.toLowerCase().includes('metamask'))) {
+    if ((ethereum as { isMetaMask?: boolean }).isMetaMask && !wallets.some(w => w.name.toLowerCase().includes('metamask'))) {
       wallets.push({
         name: 'MetaMask',
         provider: ethereum,
@@ -72,10 +72,11 @@ export const detectAvailableWallets = async (): Promise<WalletProvider[]> => {
   }
 
   // Check for provider-specific injections
-  if ((window as any).trustwallet && !wallets.some(w => w.name.toLowerCase().includes('trust'))) {
+  const trustwallet = (window as unknown as { trustwallet?: unknown }).trustwallet
+  if (trustwallet && !wallets.some(w => w.name.toLowerCase().includes('trust'))) {
     wallets.push({
       name: 'Trust Wallet',
-      provider: (window as any).trustwallet,
+      provider: trustwallet,
       isAvailable: true
     })
   }
@@ -84,7 +85,7 @@ export const detectAvailableWallets = async (): Promise<WalletProvider[]> => {
 }
 
 // Helper function to add Somnia network to wallet
-export const addSomniaNetwork = async (provider: any) => {
+export const addSomniaNetwork = async (provider: { request: (args: { method: string; params: unknown[] }) => Promise<unknown> }) => {
   return await provider.request({
     method: 'wallet_addEthereumChain',
     params: [{
@@ -102,7 +103,7 @@ export const addSomniaNetwork = async (provider: any) => {
 }
 
 // Helper function to switch to Somnia network
-export const switchToSomniaNetwork = async (provider: any) => {
+export const switchToSomniaNetwork = async (provider: { request: (args: { method: string; params: unknown[] }) => Promise<unknown> }) => {
   return await provider.request({
     method: 'wallet_switchEthereumChain',
     params: [{ chainId: '0xc488' }], // 50312 in hex
