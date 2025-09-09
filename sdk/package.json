@@ -1,6 +1,6 @@
 {
   "name": "@somniaforge/sdk",
-  "version": "1.0.0",
+  "version": "1.0.2",
   "description": "SomniaForge SDK - TypeScript toolkit for building games on Somnia Network",
   "type": "module",
   "main": "dist/index.js",

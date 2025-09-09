@@ -1,7 +1,6 @@
 import { WalletClient } from 'viem'
 import { GameSessionManager } from './managers/GameSessionManager'
 import { PlayerRegistryManager } from './managers/PlayerRegistryManager'
-import { RockPaperScissorsManager } from './managers/RockPaperScissorsManager'
 import { WalletConnector } from './managers/WalletConnector'
 import { WebSocketManager } from './managers/WebSocketManager'
 import { somniaNetwork, SOMNIA_RPC_URL, SOMNIA_WS_URL } from './constants/network'
@@ -11,7 +10,6 @@ import { SDKConfig } from './types'
 export class SomniaGameSDK {
   public gameSession: GameSessionManager
   public playerRegistry: PlayerRegistryManager
-  public rockPaperScissors: RockPaperScissorsManager
   public wallet: WalletConnector
   public webSocket: WebSocketManager
   
@@ -35,7 +33,6 @@ export class SomniaGameSDK {
     // Initialize managers
     this.gameSession = new GameSessionManager(this.config.rpcUrl, this.config.wsUrl)
     this.playerRegistry = new PlayerRegistryManager(this.config.rpcUrl, this.config.wsUrl)
-    this.rockPaperScissors = new RockPaperScissorsManager(this.config.rpcUrl, this.config.wsUrl)
     this.wallet = new WalletConnector({
       autoSwitchNetwork: true,
       onAccountChanged: this.handleAccountChanged.bind(this),
@@ -62,7 +59,6 @@ export class SomniaGameSDK {
       if (walletClient) {
         await this.gameSession.connectWallet(walletClient)
         await this.playerRegistry.connectWallet(walletClient)
-        await this.rockPaperScissors.connectWallet(walletClient)
       }
 
       // Connect WebSocket
@@ -95,7 +91,6 @@ export class SomniaGameSDK {
       if (walletClient) {
         await this.gameSession.connectWallet(walletClient)
         await this.playerRegistry.connectWallet(walletClient)
-        await this.rockPaperScissors.connectWallet(walletClient)
       }
 
       // Connect WebSocket
@@ -196,7 +191,6 @@ export class SomniaGameSDK {
       if (walletClient) {
         this.gameSession.connectWallet(walletClient)
         this.playerRegistry.connectWallet(walletClient)
-        this.rockPaperScissors.connectWallet(walletClient)
       }
     }
   }
@@ -223,9 +217,9 @@ export * from './constants/network'
 export * from './constants/contracts'
 export * from './managers/GameSessionManager'
 export * from './managers/PlayerRegistryManager'
-export * from './managers/RockPaperScissorsManager'
 export * from './managers/WalletConnector'
 export * from './managers/WebSocketManager'
+
 
 // Export UI Components (optional for React applications) - selectively to avoid conflicts
 export { 
