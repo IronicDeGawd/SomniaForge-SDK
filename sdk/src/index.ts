@@ -43,6 +43,38 @@ export class SomniaGameSDK {
   }
 
   /**
+   * Initialize the SDK using an already connected wallet provider
+   */
+  async initializeWithProvider(provider: any, account: string, chainId: number): Promise<{
+    account: `0x${string}`
+    chainId: number
+    isConnected: boolean
+  }> {
+    try {
+      // Connect wallet using the provided provider
+      const walletConnection = await this.wallet.connectWithProvider(provider, account, chainId)
+      
+      // Get wallet client and connect to managers
+      const walletClient = this.wallet.getWalletClient()
+      if (walletClient) {
+        await this.gameSession.connectWallet(walletClient)
+        await this.playerRegistry.connectWallet(walletClient)
+      }
+
+      // Connect WebSocket
+      await this.webSocket.connect()
+
+      return {
+        account: walletConnection.account,
+        chainId: walletConnection.chainId,
+        isConnected: true,
+      }
+    } catch (error) {
+      throw new Error(`Failed to initialize SDK with provider: ${error}`)
+    }
+  }
+
+  /**
    * Initialize the SDK - connect wallet and WebSocket
    */
   async initialize(): Promise<{
@@ -187,6 +219,28 @@ export * from './managers/GameSessionManager'
 export * from './managers/PlayerRegistryManager'
 export * from './managers/WalletConnector'
 export * from './managers/WebSocketManager'
+
+// Export UI Components (optional for React applications) - selectively to avoid conflicts
+export { 
+  WalletConnectButton,
+  GameCard,
+  PlayerProfile,
+  SomniaButton,
+  GameStats,
+  SomniaColors,
+  SomniaTheme,
+  css
+} from './components'
+
+export type {
+  WalletConnectButtonProps,
+  GameCardProps,
+  PlayerProfileProps,
+  SomniaButtonProps,
+  GameStatsProps,
+  UIPlayerStats,
+  UIAchievement
+} from './components'
 
 // Export default instance for quick usage
 export const somniaSDK = new SomniaGameSDK()

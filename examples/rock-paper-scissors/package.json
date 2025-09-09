@@ -10,7 +10,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@somnia/game-sdk": "file:../../sdk",
+    "@somniaforge/sdk": "file:somniaforge-sdk-1.0.0.tgz",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
     "viem": "^2.37.4"

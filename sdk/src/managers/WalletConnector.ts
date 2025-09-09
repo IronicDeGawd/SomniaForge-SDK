@@ -30,6 +30,33 @@ export class WalletConnector {
   }
 
   /**
+   * Connect using an already connected provider (useful when wallet is already connected)
+   */
+  async connectWithProvider(provider: any, account: string, chainId: number): Promise<{ account: Address; chainId: number }> {
+    try {
+      // Create wallet client with the provided account
+      this.walletClient = createWalletClient({
+        account: getAddress(account),
+        chain: somniaNetwork,
+        transport: custom(provider),
+      })
+
+      this.currentAccount = getAddress(account)
+      this.currentChainId = chainId
+
+      // Setup event listeners for the provider
+      this.setupEventListeners()
+
+      return {
+        account: this.currentAccount,
+        chainId: this.currentChainId,
+      }
+    } catch (error) {
+      throw new Error(`Failed to connect with provider: ${error}`)
+    }
+  }
+
+  /**
    * Connect to wallet (MetaMask, WalletConnect, etc.)
    */
   async connect(): Promise<{ account: Address; chainId: number }> {

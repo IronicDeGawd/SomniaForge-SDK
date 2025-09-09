@@ -89,7 +89,7 @@ export const addSomniaNetwork = async (provider: any) => {
     method: 'wallet_addEthereumChain',
     params: [{
       chainId: '0xc488', // 50312 in hex
-      chainName: 'Somnia Network',
+      chainName: 'Somnia Testnet',
       nativeCurrency: {
         name: 'Somnia Test Token',
         symbol: 'STT',

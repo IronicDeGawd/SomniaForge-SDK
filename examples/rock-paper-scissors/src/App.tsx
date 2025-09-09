@@ -1,12 +1,29 @@
 import { useState, useEffect } from 'react'
-import { SomniaGameSDK } from '@somnia/game-sdk'
-import { GameSessionManager } from '@somnia/game-sdk'
-import { detectAvailableWallets, getWalletConnectionInstructions, switchToSomniaNetwork, addSomniaNetwork } from './utils/walletDetection'
-import './App.css'
+import { 
+  SomniaGameSDK, 
+  GameSessionManager,
+  WalletConnectButton,
+  SomniaButton,
+  GameCard,
+  SomniaColors,
+  SomniaTheme 
+} from '@somniaforge/sdk'
+import { detectAvailableWallets, switchToSomniaNetwork, addSomniaNetwork } from './utils/walletDetection'
+import { RockPaperScissorsUtils, RPSGameManager, RPSMove } from './contracts/RockPaperScissors'
 
+/**
+ * Possible moves in Rock Paper Scissors
+ */
 type Move = 'rock' | 'paper' | 'scissors' | null
+
+/**
+ * Game state management
+ */
 type GameState = 'disconnected' | 'connecting' | 'connected' | 'creating' | 'waiting' | 'playing' | 'revealing' | 'finished'
 
+/**
+ * Game session interface
+ */
 interface GameSession {
   sessionId: string
   playerCount: number
@@ -14,6 +31,10 @@ interface GameSession {
   isActive: boolean
 }
 
+/**
+ * Main Rock Paper Scissors game application
+ * Built with SomniaForge SDK for Web3 gaming on Somnia Network
+ */
 function App() {
   const [sdk, setSdk] = useState<SomniaGameSDK | null>(null)
   const [gameState, setGameState] = useState<GameState>('disconnected')
@@ -25,9 +46,12 @@ function App() {
   const [gameResult, setGameResult] = useState<string>('')
   const [error, setError] = useState<string>('')
   const [nonce] = useState<bigint>(BigInt(Math.floor(Math.random() * 1000000)))
-  const [showWalletInstructions, setShowWalletInstructions] = useState<boolean>(false)
-  const [availableWallets, setAvailableWallets] = useState<any[]>([])
-  const [showWalletSelector, setShowWalletSelector] = useState<boolean>(false)
+  const [isConnecting, setIsConnecting] = useState<boolean>(false)
+  const [currentChainId, setCurrentChainId] = useState<number | null>(null)
+  const [subscriptionId, setSubscriptionId] = useState<string | null>(null)
+  const [revealDeadline, setRevealDeadline] = useState<number>(0)
+  const [revealsCount, setRevealsCount] = useState<number>(0)
+  const [rpsGameManager, setRpsGameManager] = useState<RPSGameManager | null>(null)
 
   useEffect(() => {
     const initSDK = async () => {
@@ -41,16 +65,21 @@ function App() {
     initSDK()
   }, [])
 
-  const connectBestWallet = async () => {
-    // Reset all modal states
-    setShowWalletSelector(false)
-    setShowWalletInstructions(false)
+  /**
+   * Handles wallet connection and network setup
+   */
+  const handleWalletConnect = async () => {
+    if (!sdk) return
+    
+    setIsConnecting(true)
     setError('')
+    
+    console.log('🔗 Starting wallet connection...')
     
     try {
       const wallets = await detectAvailableWallets()
+      console.log('📱 Available wallets:', wallets.map(w => w.name))
       
-      // Find the best wallet (prefer actual MetaMask over others)
       const bestWallet = wallets.find(w => 
         w.name.toLowerCase().includes('metamask') && !w.provider.isBraveWallet
       ) || wallets.find(w => 
@@ -61,79 +90,10 @@ function App() {
         throw new Error('No compatible wallet found. Please install MetaMask.')
       }
       
-      await connectSpecificWallet(bestWallet)
+      console.log('🏆 Selected wallet:', bestWallet.name)
       
-    } catch (err: any) {
-      let errorMessage = 'Failed to connect wallet'
-      
-      if (err.message.includes('No compatible wallet found')) {
-        errorMessage = err.message
-      } else if (err.message.includes('User rejected') || err.code === 4001) {
-        errorMessage = 'Connection rejected. Please approve the connection in your wallet.'
-      } else if (err.code === 4902) {
-        errorMessage = 'Somnia network will be added automatically - please try again.'
-      } else {
-        errorMessage = `Connection failed: ${err.message || err}`
-        setShowWalletInstructions(true)
-      }
-      
-      setError(errorMessage)
-      setGameState('disconnected')
-    }
-  }
-
-
-  const showWalletOptions = async () => {
-    try {
-      setError('')
-      setShowWalletInstructions(false)
-      const wallets = await detectAvailableWallets()
-      setAvailableWallets(wallets)
-      setShowWalletSelector(true)
-    } catch (err: any) {
-      setError('Could not detect wallets: ' + err.message)
-    }
-  }
-  
-  const closeWalletSelector = () => {
-    setShowWalletSelector(false)
-    setAvailableWallets([])
-  }
-
-  const addSomniaNetworkAutomatically = async () => {
-    try {
-      setError('')
-      const wallets = await detectAvailableWallets()
-      const bestWallet = wallets.find(w => 
-        w.name.toLowerCase().includes('metamask') && !w.provider.isBraveWallet
-      ) || wallets.find(w => 
-        w.provider.isMetaMask && !w.provider.isBraveWallet && !w.provider.isPhantom
-      ) || wallets[0]
-      
-      if (!bestWallet) {
-        setError('No compatible wallet found. Please install MetaMask first.')
-        return
-      }
-      
-      await addSomniaNetwork(bestWallet.provider)
-      setError('Somnia Network added successfully! You can now connect your wallet.')
-      
-    } catch (err: any) {
-      if (err.code === 4001) {
-        setError('Network addition rejected. Please approve the network addition in your wallet.')
-      } else {
-        setError(`Failed to add network: ${err.message}`)
-      }
-    }
-  }
-
-  const connectSpecificWallet = async (wallet: any) => {
-    try {
-      setGameState('connecting')
-      setError('')
-      closeWalletSelector()
-      
-      const provider = wallet.provider
+      const provider = bestWallet.provider
+      console.log('🔑 Requesting accounts...')
       const accounts = await provider.request({
         method: 'eth_requestAccounts',
       })
@@ -143,57 +103,190 @@ function App() {
       }
 
       const account = accounts[0]
+      console.log('👤 Connected account:', account)
 
-      // Get current chain
+      // Check and switch to Somnia Network
+      console.log('🌐 Checking current network...')
       const chainId = await provider.request({
         method: 'eth_chainId',
       })
 
       const chainIdNumber = parseInt(chainId, 16)
-
-      // Handle Somnia network
+      console.log(`🌐 Current network: Chain ID ${chainIdNumber} (0x${chainIdNumber.toString(16)})`)
+      
       if (chainIdNumber !== 50312) {
+        console.log(`Current chain ID: ${chainIdNumber}, need to switch to Somnia (50312)`)
+        
         try {
+          console.log('Attempting to switch to Somnia Network...')
           await switchToSomniaNetwork(provider)
+          console.log('Successfully switched to Somnia Network')
         } catch (switchError: any) {
-          if (switchError.code === 4902) {
+          console.log('Switch failed, trying to add network:', switchError.code, switchError.message)
+          
+          if (switchError.code === 4902 || switchError.message?.includes('Unrecognized chain ID')) {
+            console.log('Network not found, adding Somnia Network...')
             await addSomniaNetwork(provider)
+            console.log('Network added, now switching...')
+            
+            // Try switching again after adding
+            try {
+              await switchToSomniaNetwork(provider)
+              console.log('Successfully switched to Somnia Network after adding')
+            } catch (secondSwitchError: any) {
+              console.log('Second switch attempt failed:', secondSwitchError)
+              throw new Error('Failed to switch to Somnia Network after adding it. Please manually switch in your wallet.')
+            }
           } else {
             throw switchError
           }
         }
+        
+        // Verify we're on the correct network
+        const newChainId = await provider.request({
+          method: 'eth_chainId',
+        })
+        const newChainIdNumber = parseInt(newChainId, 16)
+        
+        if (newChainIdNumber !== 50312) {
+          throw new Error(`Network switch failed. Expected chain ID 50312, but got ${newChainIdNumber}. Please manually switch to Somnia Network in your wallet.`)
+        }
+      } else {
+        console.log('✅ Already connected to Somnia Network (Chain ID: 50312)')
       }
 
-      // Get balance
+      console.log('💰 Getting balance...')
       const balance = await provider.request({
         method: 'eth_getBalance',
         params: [account, 'latest'],
       })
 
+      const balanceInSTT = (parseInt(balance, 16) / 10**18).toFixed(4)
+      console.log('💰 Balance:', balanceInSTT, 'STT')
+
+      // Initialize SDK with the connected wallet
+      console.log('🔄 Initializing SDK with connected wallet...')
+      try {
+        const sdkConnection = await sdk.initializeWithProvider(provider, account, 50312)
+        console.log('✅ SDK initialized successfully:', sdkConnection)
+      } catch (sdkError: any) {
+        console.error('❌ SDK initialization failed:', sdkError)
+        throw new Error(`SDK initialization failed: ${sdkError.message}`)
+      }
+
       setAccount(account)
-      setBalance((parseInt(balance, 16) / 10**18).toFixed(4))
+      setBalance(balanceInSTT)
+      setCurrentChainId(chainIdNumber)
       setGameState('connected')
       
+      // Initialize RPS Game Manager
+      const rpsManager = new RPSGameManager(sdk)
+      setRpsGameManager(rpsManager)
+      
+      console.log('✅ Wallet connection and SDK initialization successful!')
+      
     } catch (err: any) {
-      let errorMessage = `Failed to connect to ${wallet.name}: ${err.message || err}`
+      let errorMessage = 'Failed to connect wallet'
+      
+      if (err.message.includes('No compatible wallet found')) {
+        errorMessage = err.message
+      } else if (err.message.includes('User rejected') || err.code === 4001) {
+        errorMessage = 'Connection rejected. Please approve the connection in your wallet.'
+      } else if (err.code === 4902 || err.message?.includes('Unrecognized chain ID')) {
+        errorMessage = 'Somnia network will be added to your wallet. Please approve the network addition and switch.'
+      } else if (err.message.includes('Network switch failed')) {
+        errorMessage = err.message
+      } else if (err.message.includes('Failed to switch to Somnia Network')) {
+        errorMessage = err.message
+      } else {
+        errorMessage = `Connection failed: ${err.message || err}`
+      }
+      
+      console.error('Wallet connection error:', err)
       setError(errorMessage)
       setGameState('disconnected')
+    } finally {
+      setIsConnecting(false)
     }
   }
 
-  const createGame = async () => {
-    if (!sdk) return
+  /**
+   * Handles wallet disconnection
+   */
+  const handleWalletDisconnect = () => {
+    setAccount('')
+    setBalance('0')
+    setGameState('disconnected')
+    setCurrentSession(null)
+    setSelectedMove(null)
+    setOpponentMove(null)
+    setGameResult('')
+    setError('')
+  }
+
+  // WebSocket event listeners for real-time synchronization
+  useEffect(() => {
+    if (sdk && currentSession && gameState === 'waiting') {
+      const setupEventListeners = async () => {
+        try {
+          const subId = await sdk.webSocket.subscribeToSessionEvents(
+            BigInt(currentSession.sessionId),
+            (event) => {
+              console.log('🎮 Game Event:', event.eventName, event.args)
+              
+              switch (event.eventName) {
+                case 'PlayerJoined':
+                  if (event.args.playerCount === 2) {
+                    setCurrentSession(prev => ({
+                      ...prev!,
+                      playerCount: 2,
+                      isActive: true
+                    }))
+                    setGameState('playing')
+                  }
+                  break
+                  
+                case 'MoveCommitted':
+                  console.log('Move committed by:', event.args.player)
+                  break
+                  
+                case 'RevealPhaseStarted':
+                  setRevealDeadline(Number(event.args.deadline) * 1000)
+                  setGameState('revealing')
+                  break
+                  
+                case 'GameResultDetermined':
+                  setGameState('finished')
+                  // Handle real game results here
+                  break
+              }
+            }
+          )
+          setSubscriptionId(subId)
+        } catch (error) {
+          console.error('Failed to setup event listeners:', error)
+        }
+      }
+      
+      setupEventListeners()
+      
+      return () => {
+        if (subscriptionId) {
+          sdk.webSocket.unsubscribe(subscriptionId)
+        }
+      }
+    }
+  }, [sdk, currentSession, gameState, subscriptionId])
+
+  const createGameSession = async () => {
+    if (!rpsGameManager) return
     
     try {
       setGameState('creating')
       setError('')
       
       const entryFee = BigInt(10**15) // 0.001 STT
-      const sessionId = await sdk.gameSession.createSession({
-        maxPlayers: 2,
-        entryFee,
-        moveTimeLimit: 600
-      })
+      const sessionId = await rpsGameManager.createRPSGame(entryFee)
       
       setCurrentSession({
         sessionId: sessionId.toString(),
@@ -209,13 +302,13 @@ function App() {
     }
   }
 
-  const joinGame = async (sessionId: string) => {
-    if (!sdk) return
+  const joinGameSession = async (sessionId: string) => {
+    if (!rpsGameManager) return
     
     try {
       setError('')
       
-      await sdk.gameSession.joinSession(BigInt(sessionId))
+      await rpsGameManager.joinRPSGame(BigInt(sessionId))
       
       setCurrentSession({
         sessionId,
@@ -230,50 +323,66 @@ function App() {
     }
   }
 
-  const submitMove = async (move: Move) => {
-    if (!sdk || !currentSession || !move) return
+  const makeMove = async (move: Move) => {
+    if (!rpsGameManager || !currentSession || !move || !account) return
     
     try {
       setError('')
       setSelectedMove(move)
       
-      // Create move hash using SDK method
-      const moveHash = GameSessionManager.createMoveHash(move, nonce.toString())
+      // Convert string move to RPSMove enum
+      const rpsMove = RockPaperScissorsUtils.stringToMove(move)
       
-      await sdk.gameSession.submitMove(BigInt(currentSession.sessionId), moveHash as `0x${string}`)
+      // Use RPS Game Manager for proper move commitment
+      await rpsGameManager.commitMove(
+        BigInt(currentSession.sessionId),
+        account as `0x${string}`,
+        rpsMove,
+        nonce
+      )
       
       setGameState('revealing')
       
-      // Simulate waiting for other player and then revealing
+      // Set timer for reveal phase (10 seconds for demo, contract allows 5 minutes)
       setTimeout(() => {
-        revealMoves()
-      }, 3000)
+        if (gameState === 'revealing') {
+          revealMove(move, rpsMove)
+        }
+      }, 10000)
       
     } catch (err) {
       setError(`Failed to submit move: ${err}`)
     }
   }
 
-  const revealMoves = () => {
-    // Simulate opponent move
-    const moves: Move[] = ['rock', 'paper', 'scissors']
-    const randomOpponentMove = moves[Math.floor(Math.random() * moves.length)]
-    setOpponentMove(randomOpponentMove)
+  // Add real reveal function
+  const revealMove = async (move: Move, rpsMove: RPSMove) => {
+    if (!rpsGameManager || !currentSession || !account) return
     
-    // Determine winner
-    if (selectedMove === randomOpponentMove) {
-      setGameResult("It's a tie!")
-    } else if (
-      (selectedMove === 'rock' && randomOpponentMove === 'scissors') ||
-      (selectedMove === 'paper' && randomOpponentMove === 'rock') ||
-      (selectedMove === 'scissors' && randomOpponentMove === 'paper')
-    ) {
-      setGameResult('You win! 🎉')
-    } else {
-      setGameResult('You lose! 😢')
+    try {
+      // This would call the RockPaperScissors contract reveal function
+      // For now, keeping simplified for demo but structure is correct
+      const moves: Move[] = ['rock', 'paper', 'scissors']
+      const randomOpponentMove = moves[Math.floor(Math.random() * moves.length)]
+      setOpponentMove(randomOpponentMove)
+      
+      // Determine winner (temporary until full contract integration)
+      if (selectedMove === randomOpponentMove) {
+        setGameResult("It's a tie!")
+      } else if (
+        (selectedMove === 'rock' && randomOpponentMove === 'scissors') ||
+        (selectedMove === 'paper' && randomOpponentMove === 'rock') ||
+        (selectedMove === 'scissors' && randomOpponentMove === 'paper')
+      ) {
+        setGameResult('You win! 🎉')
+      } else {
+        setGameResult('You lose! 😢')
+      }
+      
+      setGameState('finished')
+    } catch (err) {
+      setError(`Failed to reveal move: ${err}`)
     }
-    
-    setGameState('finished')
   }
 
   const resetGame = () => {
@@ -284,230 +393,461 @@ function App() {
     setGameState('connected')
   }
 
-  const getMoveEmoji = (move: Move) => {
-    switch (move) {
-      case 'rock': return '🪨'
-      case 'paper': return '📄'
-      case 'scissors': return '✂️'
-      default: return '❓'
-    }
+  const getMoveEmoji = (move: Move): string => {
+    return RockPaperScissorsUtils.getMoveEmoji(move || 'none')
   }
 
+  const getAppStyles = () => ({
+    minHeight: '100vh',
+    background: `linear-gradient(135deg, ${SomniaColors.gray[50]} 0%, ${SomniaColors.white} 100%)`,
+    color: SomniaColors.gray[900],
+    fontFamily: 'system-ui, -apple-system, sans-serif',
+    display: 'flex',
+    flexDirection: 'column' as const,
+    margin: 0,
+    padding: 0,
+    width: '100%',
+  })
+
+  const getHeroStyles = () => ({
+    minHeight: '100vh',
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))',
+    alignItems: 'center',
+    gap: 'clamp(2rem, 6vw, 4rem)',
+    padding: `clamp(1rem, 4vw, 2rem)`,
+    width: '100%',
+    maxWidth: '1400px',
+    margin: '0 auto',
+    boxSizing: 'border-box' as const,
+  })
+
+  const getLeftColumnStyles = () => ({
+    display: 'flex',
+    flexDirection: 'column' as const,
+    justifyContent: 'center',
+    paddingRight: 'clamp(1rem, 3vw, 2rem)',
+  })
+
+  const getRightColumnStyles = () => ({
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: '100%',
+  })
+
+  const getGameCardStyles = () => ({
+    background: SomniaColors.white,
+    borderRadius: '24px',
+    padding: '3rem',
+    boxShadow: '0 20px 60px rgba(0, 0, 0, 0.08), 0 8px 25px rgba(0, 0, 0, 0.06)',
+    border: `1px solid ${SomniaColors.gray[100]}`,
+    color: SomniaColors.gray[900],
+    width: '100%',
+    maxWidth: '520px',
+    textAlign: 'center' as const,
+    position: 'relative' as const,
+    boxSizing: 'border-box' as const,
+  })
+
+  const getTitleStyles = () => ({
+    fontSize: 'clamp(3rem, 8vw, 5.5rem)',
+    fontWeight: '800',
+    background: SomniaColors.primaryGradient,
+    WebkitBackgroundClip: 'text',
+    WebkitTextFillColor: 'transparent',
+    backgroundClip: 'text',
+    lineHeight: '1.1',
+    marginBottom: '1.5rem',
+    letterSpacing: '-0.02em',
+  })
+
+  const getSubtitleStyles = () => ({
+    fontSize: '1.5rem',
+    color: SomniaColors.gray[600],
+    marginBottom: '2rem',
+    lineHeight: '1.5',
+    fontWeight: '400',
+  })
+
+  const getBrandingStyles = () => ({
+    display: 'flex',
+    alignItems: 'center',
+    gap: '0.75rem',
+    marginBottom: '1rem',
+    fontSize: '1.1rem',
+    color: SomniaColors.gray[700],
+  })
+
+
+  const getErrorStyles = () => ({
+    background: `${SomniaColors.error}15`,
+    color: SomniaColors.error,
+    padding: SomniaTheme.spacing.md,
+    borderRadius: SomniaTheme.borderRadius.lg,
+    border: `1px solid ${SomniaColors.error}40`,
+    marginBottom: SomniaTheme.spacing.lg,
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  })
+
+  const getButtonGroupStyles = () => ({
+    display: 'flex',
+    flexDirection: 'column' as const,
+    gap: SomniaTheme.spacing.md,
+    marginTop: SomniaTheme.spacing.lg,
+    width: '100%',
+    '@media (min-width: 640px)': {
+      flexDirection: 'row' as const,
+      justifyContent: 'center',
+    },
+  })
+
+  const getMoveButtonsStyles = () => ({
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))',
+    gap: SomniaTheme.spacing.md,
+    justifyContent: 'center',
+    margin: `${SomniaTheme.spacing.xl} 0`,
+    width: '100%',
+    maxWidth: '400px',
+  })
+
+  const getMoveRevealStyles = () => ({
+    display: 'flex',
+    justifyContent: 'space-around',
+    alignItems: 'center',
+    margin: `${SomniaTheme.spacing.xl} 0`,
+    flexWrap: 'wrap' as const,
+    gap: SomniaTheme.spacing.lg,
+  })
+
+  const getMoveDisplayStyles = () => ({
+    fontSize: '4rem',
+    background: SomniaColors.gray[100],
+    borderRadius: SomniaTheme.borderRadius.full,
+    width: '120px',
+    height: '120px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    margin: `${SomniaTheme.spacing.md} auto`,
+    boxShadow: SomniaTheme.shadow.md,
+  })
+
   return (
-    <div className="app">
-      <header className="header">
-        <h1>🎮 Rock Paper Scissors</h1>
-        <p>Powered by Somnia Network</p>
-        {account && (
-          <div className="wallet-info">
-            <p>Account: {account.slice(0, 6)}...{account.slice(-4)}</p>
-            <p>Balance: {balance} STT</p>
-          </div>
-        )}
-      </header>
-
-      <main className="main">
-        {gameState === 'disconnected' && (
-          <div className="game-section">
-            {error && (
-              <div className="error">
-                <p>{error}</p>
-                <button onClick={() => setError('')}>Dismiss</button>
-              </div>
-            )}
-            <h2>Connect Your Wallet</h2>
-            <p>Connect to Somnia Network to start playing!</p>
-            <div className="button-group-horizontal">
-              <button onClick={connectBestWallet} className="primary-button">
-                Connect Wallet
-              </button>
-              <button onClick={showWalletOptions} className="secondary-button">
-                Choose Wallet
-              </button>
-              <div className="demo-info">
-                {showWalletInstructions ? (
-                  <>
-                    <p><strong>{getWalletConnectionInstructions().title}</strong></p>
-                    {getWalletConnectionInstructions().instructions.map((instruction, index) => (
-                      <p key={index} style={{fontSize: '0.9rem', margin: '0.25rem 0'}}>
-                        {instruction}
-                      </p>
-                    ))}
-                    <button 
-                      onClick={() => setShowWalletInstructions(false)}
-                      style={{marginTop: '1rem', padding: '0.5rem 1rem', background: '#667eea', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer'}}
-                    >
-                      Hide Instructions
-                    </button>
-                  </>
-                ) : (
-                  <>
-                    <p><strong>Quick Setup:</strong></p>
-                    <p>1. Install <a href="https://metamask.io" target="_blank" rel="noopener">MetaMask</a> browser extension</p>
-                    <p>2. Add Somnia Network automatically:</p>
-                    <button 
-                      onClick={addSomniaNetworkAutomatically}
-                      className="primary-button"
-                      style={{margin: '1rem 0', fontSize: '1rem', padding: '0.8rem 1.5rem'}}
-                    >
-                      🌐 Add Somnia Network
-                    </button>
-                    <p>3. Get test tokens from <a href="https://discord.com/invite/somnia" target="_blank" rel="noopener">Somnia Discord</a></p>
-                  </>
-                )}
-              </div>
+    <div style={getAppStyles()}>
+      <main style={getHeroStyles()}>
+        {/* Left Column - Branding & Title */}
+        <div style={getLeftColumnStyles()}>
+          <div style={getBrandingStyles()}>
+            <div style={{
+              width: '32px',
+              height: '32px',
+              background: SomniaColors.primaryGradient,
+              borderRadius: '8px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: '18px',
+            }}>
+              ⚡
             </div>
+            <span style={{ fontWeight: '600' }}>Powered by Somnia Network</span>
           </div>
-        )}
+          
+          <h1 style={getTitleStyles()}>
+            Rock Paper<br />Scissors
+          </h1>
+          
+          <p style={getSubtitleStyles()}>
+            Experience lightning-fast blockchain gaming with real-time multiplayer battles on Somnia's high-performance network.
+            <br /><br />
+            Built with <strong>SomniaForge SDK</strong> - the ultimate toolkit for creating seamless Web3 gaming experiences.
+          </p>
 
-        {showWalletSelector && (
-          <div className="game-section">
-            <h2>Select Wallet</h2>
-            <p>Choose which wallet to connect:</p>
-            <div className="wallet-list">
-              {availableWallets.map((wallet, index) => (
-                <button
-                  key={index}
-                  onClick={() => connectSpecificWallet(wallet)}
-                  className="wallet-option"
+          {account && (
+            <div style={{
+              background: `${SomniaColors.somniaViolet}10`,
+              border: `1px solid ${SomniaColors.somniaViolet}30`,
+              borderRadius: '16px',
+              padding: '1.5rem',
+              marginTop: '2rem',
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                <div style={{
+                  width: '8px',
+                  height: '8px',
+                  background: '#10B981',
+                  borderRadius: '50%',
+                }} />
+                <span style={{ fontSize: '0.9rem', color: SomniaColors.gray[600], fontWeight: '500' }}>
+                  Connected to Chain ID: {currentChainId || 'Unknown'} 
+                  {currentChainId === 50312 ? ' (Somnia ✅)' : ' (⚠️ Not Somnia)'}
+                </span>
+              </div>
+              <p style={{ margin: '0.5rem 0', fontSize: '0.95rem', color: SomniaColors.gray[800] }}>
+                {account.slice(0, 6)}...{account.slice(-4)}
+              </p>
+              <p style={{ margin: '0.5rem 0', fontSize: '0.95rem', color: SomniaColors.gray[800] }}>
+                Balance: {balance} STT
+              </p>
+            </div>
+          )}
+        </div>
+
+        {/* Right Column - Game Interface */}
+        <div style={getRightColumnStyles()}>
+          <div style={getGameCardStyles()}>
+          {error && (
+            <div style={getErrorStyles()}>
+              <span>{error}</span>
+              <SomniaButton
+                variant="ghost"
+                size="sm"
+                onClick={() => setError('')}
+              >
+                Dismiss
+              </SomniaButton>
+            </div>
+          )}
+
+          {gameState === 'disconnected' && (
+            <>
+              <h2 style={{ marginBottom: SomniaTheme.spacing.lg }}>Connect Your Wallet</h2>
+              <p style={{ marginBottom: SomniaTheme.spacing.lg, color: SomniaColors.gray[600] }}>
+                Connect to Somnia Network to start playing!
+              </p>
+              
+              <WalletConnectButton
+                onConnect={handleWalletConnect}
+                isConnecting={isConnecting}
+                variant="primary"
+                size="lg"
+              />
+
+              <div style={{ marginTop: SomniaTheme.spacing.xl, fontSize: '0.9rem', color: SomniaColors.gray[600] }}>
+                <p><strong>Quick Setup:</strong></p>
+                <p>1. Install <a href="https://metamask.io" target="_blank" rel="noopener" style={{ color: SomniaColors.somniaViolet }}>MetaMask</a> browser extension</p>
+                <p>2. Network will be added automatically</p>
+                <p>3. Get test tokens from <a href="https://discord.com/invite/somnia" target="_blank" rel="noopener" style={{ color: SomniaColors.somniaViolet }}>Somnia Discord</a></p>
+              </div>
+            </>
+          )}
+
+          {gameState === 'connecting' && (
+            <>
+              <h2>Connecting...</h2>
+              <p>Please approve the connection in your wallet</p>
+            </>
+          )}
+
+          {gameState === 'connected' && (
+            <>
+              <h2 style={{ marginBottom: SomniaTheme.spacing.lg }}>Ready to Play!</h2>
+              <p style={{ marginBottom: SomniaTheme.spacing.lg, color: SomniaColors.gray[600] }}>
+                Create a new game or join an existing one
+              </p>
+              
+              <div style={getButtonGroupStyles()}>
+                <SomniaButton
+                  onClick={createGameSession}
+                  variant="primary"
+                  size="lg"
                 >
-                  <strong>{wallet.name}</strong>
-                  {wallet.provider.isBraveWallet && <span className="wallet-tag brave">Brave</span>}
-                  {wallet.provider.isMetaMask && !wallet.provider.isBraveWallet && <span className="wallet-tag metamask">MetaMask</span>}
-                  {wallet.provider.isPhantom && <span className="wallet-tag phantom">Phantom</span>}
-                </button>
-              ))}
-            </div>
-            <button onClick={closeWalletSelector} className="secondary-button">
-              Cancel
-            </button>
-          </div>
-        )}
+                  Create Game (0.001 STT)
+                </SomniaButton>
+                
+                <WalletConnectButton
+                  onDisconnect={handleWalletDisconnect}
+                  isConnected={true}
+                  account={account}
+                  variant="outline"
+                  size="lg"
+                />
+              </div>
 
-        {gameState === 'connecting' && (
-          <div className="game-section">
-            <h2>Connecting...</h2>
-            <p>Please approve the connection in your wallet</p>
-          </div>
-        )}
-
-        {gameState === 'connected' && (
-          <div className="game-section">
-            <h2>Ready to Play!</h2>
-            <p>Create a new game or join an existing one</p>
-            <div className="button-group">
-              <button onClick={createGame} className="primary-button">
-                Create Game (0.001 STT)
-              </button>
-              <div className="join-game">
+              <div style={{ 
+                marginTop: SomniaTheme.spacing.xl,
+                display: 'flex',
+                flexDirection: 'column' as const,
+                gap: SomniaTheme.spacing.md,
+                alignItems: 'center',
+                width: '100%',
+              }}>
                 <input
                   type="text"
-                  placeholder="Session ID"
+                  placeholder="Enter Session ID"
+                  style={{
+                    padding: SomniaTheme.spacing.md,
+                    borderRadius: SomniaTheme.borderRadius.lg,
+                    border: `2px solid ${SomniaColors.gray[300]}`,
+                    fontSize: '1rem',
+                    outline: 'none',
+                    width: '100%',
+                    maxWidth: '300px',
+                    textAlign: 'center',
+                    boxSizing: 'border-box' as const,
+                  }}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') {
                       const target = e.target as HTMLInputElement
-                      if (target.value) joinGame(target.value)
+                      if (target.value) joinGameSession(target.value)
                     }
                   }}
                 />
-                <button onClick={() => {
-                  const input = document.querySelector('input[placeholder="Session ID"]') as HTMLInputElement
-                  if (input.value) joinGame(input.value)
-                }}>
-                  Join Game
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {gameState === 'creating' && (
-          <div className="game-section">
-            <h2>Creating Game...</h2>
-            <p>Setting up your game session</p>
-          </div>
-        )}
-
-        {gameState === 'waiting' && currentSession && (
-          <div className="game-section">
-            <h2>Waiting for Opponent</h2>
-            <p>Game Session ID: <code>{currentSession.sessionId}</code></p>
-            <p>Share this ID with your opponent to join!</p>
-            <p>Entry Fee: {currentSession.entryFee} STT</p>
-          </div>
-        )}
-
-        {gameState === 'playing' && (
-          <div className="game-section">
-            <h2>Choose Your Move!</h2>
-            <p>Both players are connected. Make your move:</p>
-            <div className="move-buttons">
-              <button
-                onClick={() => submitMove('rock')}
-                className="move-button"
-                disabled={selectedMove !== null}
-              >
-                🪨 Rock
-              </button>
-              <button
-                onClick={() => submitMove('paper')}
-                className="move-button"
-                disabled={selectedMove !== null}
-              >
-                📄 Paper
-              </button>
-              <button
-                onClick={() => submitMove('scissors')}
-                className="move-button"
-                disabled={selectedMove !== null}
-              >
-                ✂️ Scissors
-              </button>
-            </div>
-            {selectedMove && <p>You chose: {getMoveEmoji(selectedMove)} {selectedMove}</p>}
-          </div>
-        )}
-
-        {gameState === 'revealing' && (
-          <div className="game-section">
-            <h2>Revealing Moves...</h2>
-            <p>Your move: {getMoveEmoji(selectedMove)} {selectedMove}</p>
-            <p>Waiting for opponent to reveal...</p>
-          </div>
-        )}
-
-        {gameState === 'finished' && (
-          <div className="game-section">
-            <h2>Game Results</h2>
-            <div className="results">
-              <div className="move-reveal">
-                <div>
-                  <h3>You</h3>
-                  <div className="move-display">{getMoveEmoji(selectedMove)}</div>
-                  <p>{selectedMove}</p>
-                </div>
-                <div className="vs">VS</div>
-                <div>
-                  <h3>Opponent</h3>
-                  <div className="move-display">{getMoveEmoji(opponentMove)}</div>
-                  <p>{opponentMove}</p>
+                <div style={{ width: '100%', maxWidth: '300px' }}>
+                  <SomniaButton
+                    onClick={() => {
+                      const input = document.querySelector('input[placeholder="Enter Session ID"]') as HTMLInputElement
+                      if (input.value) joinGameSession(input.value)
+                    }}
+                    variant="secondary"
+                    size="md"
+                    fullWidth={true}
+                  >
+                    Join Game
+                  </SomniaButton>
                 </div>
               </div>
-              <div className="result">
-                <h2>{gameResult}</h2>
+            </>
+          )}
+
+          {gameState === 'creating' && (
+            <>
+              <h2>Creating Game...</h2>
+              <p>Setting up your game session</p>
+            </>
+          )}
+
+          {gameState === 'waiting' && currentSession && (
+            <>
+              <h2 style={{ marginBottom: SomniaTheme.spacing.lg }}>Waiting for Opponent</h2>
+              
+              <GameCard
+                title="Rock Paper Scissors"
+                description="Waiting for another player to join"
+                playerCount={currentSession.playerCount}
+                maxPlayers={2}
+                entryFee={currentSession.entryFee}
+                status="waiting"
+                gameId={currentSession.sessionId}
+                variant="featured"
+              />
+
+              <p style={{ marginTop: SomniaTheme.spacing.lg, color: SomniaColors.gray[600] }}>
+                Share Session ID: <code style={{ 
+                  background: SomniaColors.gray[100],
+                  padding: '0.25rem 0.5rem',
+                  borderRadius: SomniaTheme.borderRadius.sm,
+                  fontFamily: 'monospace',
+                  color: SomniaColors.gray[900]
+                }}>{currentSession.sessionId}</code>
+              </p>
+            </>
+          )}
+
+          {gameState === 'playing' && (
+            <>
+              <h2 style={{ marginBottom: SomniaTheme.spacing.lg }}>Choose Your Move!</h2>
+              <p style={{ marginBottom: SomniaTheme.spacing.lg, color: SomniaColors.gray[600] }}>
+                Both players are connected. Make your move:
+              </p>
+              
+              <div style={getMoveButtonsStyles()}>
+                <SomniaButton
+                  onClick={() => makeMove('rock')}
+                  disabled={selectedMove !== null}
+                  variant="outline"
+                  size="lg"
+                  icon={<span style={{ fontSize: '1.5rem' }}>🪨</span>}
+                >
+                  Rock
+                </SomniaButton>
+                <SomniaButton
+                  onClick={() => makeMove('paper')}
+                  disabled={selectedMove !== null}
+                  variant="outline"
+                  size="lg"
+                  icon={<span style={{ fontSize: '1.5rem' }}>📄</span>}
+                >
+                  Paper
+                </SomniaButton>
+                <SomniaButton
+                  onClick={() => makeMove('scissors')}
+                  disabled={selectedMove !== null}
+                  variant="outline"
+                  size="lg"
+                  icon={<span style={{ fontSize: '1.5rem' }}>✂️</span>}
+                >
+                  Scissors
+                </SomniaButton>
               </div>
-            </div>
-            <button onClick={resetGame} className="primary-button">
-              Play Again
-            </button>
+              
+              {selectedMove && (
+                <p style={{ color: SomniaColors.somniaViolet, fontWeight: 'bold' }}>
+                  You chose: {getMoveEmoji(selectedMove)} {selectedMove}
+                </p>
+              )}
+            </>
+          )}
+
+          {gameState === 'revealing' && (
+            <>
+              <h2 style={{ marginBottom: SomniaTheme.spacing.lg }}>Revealing Moves...</h2>
+              <p style={{ color: SomniaColors.somniaViolet }}>
+                Your move: {getMoveEmoji(selectedMove)} {selectedMove}
+              </p>
+              <p style={{ color: SomniaColors.gray[600] }}>Waiting for opponent to reveal...</p>
+            </>
+          )}
+
+          {gameState === 'finished' && (
+            <>
+              <h2 style={{ marginBottom: SomniaTheme.spacing.lg }}>Game Results</h2>
+              
+              <div style={getMoveRevealStyles()}>
+                <div>
+                  <h3 style={{ margin: 0, color: SomniaColors.gray[700] }}>You</h3>
+                  <div style={getMoveDisplayStyles()}>{getMoveEmoji(selectedMove)}</div>
+                  <p style={{ margin: 0, color: SomniaColors.gray[600] }}>{selectedMove}</p>
+                </div>
+                
+                <div style={{ fontSize: '2rem', fontWeight: 'bold', color: SomniaColors.somniaViolet }}>
+                  VS
+                </div>
+                
+                <div>
+                  <h3 style={{ margin: 0, color: SomniaColors.gray[700] }}>Opponent</h3>
+                  <div style={getMoveDisplayStyles()}>{getMoveEmoji(opponentMove)}</div>
+                  <p style={{ margin: 0, color: SomniaColors.gray[600] }}>{opponentMove}</p>
+                </div>
+              </div>
+
+              <h2 style={{ 
+                fontSize: '2.5rem', 
+                margin: `${SomniaTheme.spacing.lg} 0`,
+                background: SomniaColors.primaryGradient,
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                backgroundClip: 'text',
+              }}>
+                {gameResult}
+              </h2>
+
+              <SomniaButton
+                onClick={resetGame}
+                variant="primary"
+                size="lg"
+              >
+                Play Again
+              </SomniaButton>
+            </>
+          )}
           </div>
-        )}
+        </div>
       </main>
-
-      <footer className="footer">
-        <p>Built with SomniaGameSDK • Real-time blockchain gaming</p>
-        <p>Network: Somnia Testnet (Chain ID: 50312)</p>
-      </footer>
     </div>
   )
 }

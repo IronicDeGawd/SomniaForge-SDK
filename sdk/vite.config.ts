@@ -1,9 +1,13 @@
 import { defineConfig } from 'vite'
 import { resolve } from 'path'
 import dts from 'vite-plugin-dts'
+import react from '@vitejs/plugin-react'
 
 export default defineConfig({
   plugins: [
+    react({
+      jsxRuntime: 'automatic'
+    }),
     dts({
       include: ['src/**/*'],
       exclude: ['src/**/*.test.ts', 'src/**/*.spec.ts']
@@ -17,11 +21,14 @@ export default defineConfig({
       fileName: (format) => `index.${format === 'es' ? 'mjs' : 'js'}`
     },
     rollupOptions: {
-      external: ['viem', 'ws'],
+      external: ['viem', 'ws', 'react', 'react-dom', 'react/jsx-runtime'],
       output: {
         globals: {
           viem: 'viem',
-          ws: 'ws'
+          ws: 'ws',
+          react: 'React',
+          'react-dom': 'ReactDOM',
+          'react/jsx-runtime': 'jsxRuntime'
         }
       }
     },
