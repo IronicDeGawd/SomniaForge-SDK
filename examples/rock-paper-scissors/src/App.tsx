@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react'
 import { 
   SomniaGameSDK, 
-  GameSessionManager,
   WalletConnectButton,
   SomniaButton,
   GameCard,
@@ -10,6 +9,8 @@ import {
 } from '@somniaforge/sdk'
 import { detectAvailableWallets, switchToSomniaNetwork, addSomniaNetwork } from './utils/walletDetection'
 import { RockPaperScissorsUtils, RPSGameManager, RPSMove } from './contracts/RockPaperScissors'
+import { GameTimer } from './components/GameTimer'
+import { PlayerStatus } from './components/PlayerStatus'
 
 /**
  * Possible moves in Rock Paper Scissors
@@ -50,7 +51,6 @@ function App() {
   const [currentChainId, setCurrentChainId] = useState<number | null>(null)
   const [subscriptionId, setSubscriptionId] = useState<string | null>(null)
   const [revealDeadline, setRevealDeadline] = useState<number>(0)
-  const [revealsCount, setRevealsCount] = useState<number>(0)
   const [rpsGameManager, setRpsGameManager] = useState<RPSGameManager | null>(null)
 
   useEffect(() => {
@@ -346,7 +346,7 @@ function App() {
       // Set timer for reveal phase (10 seconds for demo, contract allows 5 minutes)
       setTimeout(() => {
         if (gameState === 'revealing') {
-          revealMove(move, rpsMove)
+          revealMove()
         }
       }, 10000)
       
@@ -356,7 +356,7 @@ function App() {
   }
 
   // Add real reveal function
-  const revealMove = async (move: Move, rpsMove: RPSMove) => {
+  const revealMove = async () => {
     if (!rpsGameManager || !currentSession || !account) return
     
     try {
@@ -725,6 +725,28 @@ function App() {
             <>
               <h2 style={{ marginBottom: SomniaTheme.spacing.lg }}>Waiting for Opponent</h2>
               
+              <div style={{ 
+                display: 'flex', 
+                flexDirection: 'column' as const, 
+                gap: SomniaTheme.spacing.md, 
+                marginBottom: SomniaTheme.spacing.lg 
+              }}>
+                <PlayerStatus
+                  playerAddress={account}
+                  isConnected={true}
+                  hasCommittedMove={false}
+                  hasRevealedMove={false}
+                  isCurrentPlayer={true}
+                />
+                <PlayerStatus
+                  playerAddress="Waiting for player..."
+                  isConnected={false}
+                  hasCommittedMove={false}
+                  hasRevealedMove={false}
+                  isCurrentPlayer={false}
+                />
+              </div>
+              
               <GameCard
                 title="Rock Paper Scissors"
                 description="Waiting for another player to join"
@@ -751,6 +773,29 @@ function App() {
           {gameState === 'playing' && (
             <>
               <h2 style={{ marginBottom: SomniaTheme.spacing.lg }}>Choose Your Move!</h2>
+              
+              <div style={{ 
+                display: 'flex', 
+                flexDirection: 'column' as const, 
+                gap: SomniaTheme.spacing.md, 
+                marginBottom: SomniaTheme.spacing.lg 
+              }}>
+                <PlayerStatus
+                  playerAddress={account}
+                  isConnected={true}
+                  hasCommittedMove={selectedMove !== null}
+                  hasRevealedMove={false}
+                  isCurrentPlayer={true}
+                />
+                <PlayerStatus
+                  playerAddress="Opponent"
+                  isConnected={true}
+                  hasCommittedMove={false}
+                  hasRevealedMove={false}
+                  isCurrentPlayer={false}
+                />
+              </div>
+              
               <p style={{ marginBottom: SomniaTheme.spacing.lg, color: SomniaColors.gray[600] }}>
                 Both players are connected. Make your move:
               </p>
@@ -796,6 +841,19 @@ function App() {
           {gameState === 'revealing' && (
             <>
               <h2 style={{ marginBottom: SomniaTheme.spacing.lg }}>Revealing Moves...</h2>
+              
+              {revealDeadline > 0 && (
+                <div style={{ marginBottom: SomniaTheme.spacing.lg }}>
+                  <GameTimer
+                    deadline={revealDeadline}
+                    onExpired={() => {
+                      console.log('Reveal timer expired')
+                      // Auto-reveal or handle timeout
+                    }}
+                  />
+                </div>
+              )}
+              
               <p style={{ color: SomniaColors.somniaViolet }}>
                 Your move: {getMoveEmoji(selectedMove)} {selectedMove}
               </p>
