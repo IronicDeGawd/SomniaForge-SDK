@@ -2,11 +2,10 @@ import { useState, useEffect } from 'react'
 import { 
   SomniaGameSDK, 
   SomniaButton,
-  GameCard,
   SomniaColors,
-  SomniaTheme,
-  RPSMove
+  SomniaTheme
 } from '@somniaforge/sdk'
+import { RPSMove } from './types/rockPaperScissors'
 import { detectAvailableWallets, switchToSomniaNetwork, addSomniaNetwork } from './utils/walletDetection'
 import { useRockPaperScissors } from './hooks/useRockPaperScissors'
 import { GameTimer } from './components/GameTimer'
@@ -14,6 +13,31 @@ import { PlayerStatus } from './components/PlayerStatus'
 
 type Move = 'rock' | 'paper' | 'scissors' | null
 type ConnectionState = 'disconnected' | 'connecting' | 'connected'
+
+interface EthereumProvider {
+  request: (args: { method: string; params?: unknown[] }) => Promise<unknown>
+  isMetaMask?: boolean
+  isBraveWallet?: boolean
+  isPhantom?: boolean
+}
+
+interface WalletInfo {
+  name: string
+  provider: EthereumProvider
+}
+
+const Card = ({ children }: { children: React.ReactNode }) => (
+  <div style={{
+    background: SomniaColors.white,
+    borderRadius: SomniaTheme.borderRadius.xl,
+    padding: SomniaTheme.spacing.lg,
+    boxShadow: SomniaTheme.shadow.md,
+    border: `1px solid ${SomniaColors.gray[200]}`,
+  }}>
+    {children}
+  </div>
+)
+
 function App() {
   const [sdk, setSdk] = useState<SomniaGameSDK | null>(null)
   const [connectionState, setConnectionState] = useState<ConnectionState>('disconnected')
@@ -43,7 +67,7 @@ function App() {
     setError('')
     
     try {
-      const wallets = await detectAvailableWallets()
+      const wallets = await detectAvailableWallets() as WalletInfo[]
       
       const bestWallet = wallets.find(w => 
         w.name.toLowerCase().includes('metamask') && !w.provider.isBraveWallet
@@ -55,10 +79,10 @@ function App() {
         throw new Error('No compatible wallet found. Please install MetaMask.')
       }
       
-      const provider = bestWallet.provider
+      const provider: EthereumProvider = bestWallet.provider
       const accounts = await provider.request({
         method: 'eth_requestAccounts',
-      })
+      }) as string[]
 
       if (!accounts || accounts.length === 0) {
         throw new Error('No accounts found')
@@ -67,17 +91,17 @@ function App() {
       const account = accounts[0]
       const chainId = await provider.request({
         method: 'eth_chainId',
-      })
+      }) as string
 
       const chainIdNumber = parseInt(chainId, 16)
       
       if (chainIdNumber !== 50312) {
         try {
-          await switchToSomniaNetwork(provider)
+          await switchToSomniaNetwork(provider as EthereumProvider)
         } catch (switchError: unknown) {
           if ((switchError as { code: number }).code === 4902) {
-            await addSomniaNetwork(provider)
-            await switchToSomniaNetwork(provider)
+            await addSomniaNetwork(provider as EthereumProvider)
+            await switchToSomniaNetwork(provider as EthereumProvider)
           } else {
             throw switchError
           }
@@ -91,7 +115,7 @@ function App() {
       const balanceResponse = await provider.request({
         method: 'eth_getBalance',
         params: [account, 'latest'],
-      })
+      }) as string
       
       const balanceWei = parseInt(balanceResponse, 16)
       const balanceEth = (balanceWei / 1e18).toFixed(4)
@@ -229,7 +253,7 @@ function App() {
 
         <ErrorDisplay />
         {connectionState === 'disconnected' && (
-          <GameCard>
+          <Card>
             <div style={{ textAlign: 'center', padding: '40px' }}>
               <div style={{ fontSize: '4rem', marginBottom: '20px' }}>🔗</div>
               <h2 style={{ color: SomniaColors.gray[800], marginBottom: '20px' }}>
@@ -241,12 +265,12 @@ function App() {
               <SomniaButton 
                 onClick={handleWalletConnect}
                 disabled={isConnecting}
-                style={{ minWidth: '200px' }}
+                size="lg"
               >
                 {isConnecting ? '🔄 Connecting...' : '🔗 Connect Wallet'}
               </SomniaButton>
             </div>
-          </GameCard>
+          </Card>
         )}
 
         {connectionState === 'connected' && (
@@ -281,7 +305,7 @@ function App() {
               </SomniaButton>
             </div>
             {rpsGame.gameState === 'idle' && (
-              <GameCard>
+              <Card>
                 <div style={{ textAlign: 'center', padding: '40px' }}>
                   <div style={{ fontSize: '3rem', marginBottom: '20px' }}>🎮</div>
                   <h2 style={{ color: SomniaColors.gray[800], marginBottom: '30px' }}>
@@ -321,31 +345,31 @@ function App() {
                     </div>
                   </div>
                 </div>
-              </GameCard>
+              </Card>
             )}
 
             {rpsGame.gameState === 'creating' && (
-              <GameCard>
+              <Card>
                 <div style={{ textAlign: 'center', padding: '40px' }}>
                   <div style={{ fontSize: '3rem', marginBottom: '20px' }}>⏳</div>
                   <h2>Creating Game...</h2>
                 </div>
-              </GameCard>
+              </Card>
             )}
 
             {rpsGame.gameState === 'waiting' && (
-              <GameCard>
+              <Card>
                 <div style={{ textAlign: 'center', padding: '40px' }}>
                   <div style={{ fontSize: '3rem', marginBottom: '20px' }}>⏳</div>
                   <h2>Waiting for Opponent</h2>
                   <p>Session ID: {rpsGame.currentSession}</p>
                   <p>Share this ID with your opponent to let them join!</p>
                 </div>
-              </GameCard>
+              </Card>
             )}
 
             {rpsGame.gameState === 'committing' && (
-              <GameCard>
+              <Card>
                 <div style={{ textAlign: 'center', padding: '40px' }}>
                   <h2 style={{ marginBottom: '30px' }}>Choose Your Move</h2>
                   <div style={{ 
@@ -358,14 +382,7 @@ function App() {
                       <SomniaButton
                         key={move}
                         onClick={() => makeMove(move)}
-                        style={{ 
-                          fontSize: '2rem',
-                          minWidth: '120px',
-                          minHeight: '80px',
-                          display: 'flex',
-                          flexDirection: 'column',
-                          gap: '10px'
-                        }}
+                        size="lg"
                       >
                         <div style={{ fontSize: '2rem' }}>{getMoveEmoji(move)}</div>
                         <div style={{ fontSize: '1rem', textTransform: 'capitalize' }}>
@@ -375,11 +392,11 @@ function App() {
                     ))}
                   </div>
                 </div>
-              </GameCard>
+              </Card>
             )}
 
             {rpsGame.gameState === 'revealing' && (
-              <GameCard>
+              <Card>
                 <div style={{ textAlign: 'center', padding: '40px' }}>
                   <h2 style={{ marginBottom: '20px' }}>Reveal Phase</h2>
                   {selectedMove && (
@@ -409,11 +426,11 @@ function App() {
                     </div>
                   )}
                 </div>
-              </GameCard>
+              </Card>
             )}
 
             {rpsGame.gameState === 'finished' && rpsGame.gameResult && (
-              <GameCard>
+              <Card>
                 <div style={{ textAlign: 'center', padding: '40px' }}>
                   <div style={{ fontSize: '4rem', marginBottom: '20px' }}>
                     {rpsGame.gameResult.isDraw ? '🤝' : 
@@ -451,7 +468,7 @@ function App() {
                     </SomniaButton>
                   </div>
                 </div>
-              </GameCard>
+              </Card>
             )}
 
             {rpsGame.gameState !== 'idle' && rpsGame.gameState !== 'creating' && rpsGame.currentSession && (

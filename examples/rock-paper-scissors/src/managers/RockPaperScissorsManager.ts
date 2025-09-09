@@ -1,33 +1,24 @@
 import {
   createPublicClient,
   http,
-  webSocket,
   decodeEventLog,
-  Address,
-  Hash,
-  WalletClient,
-  PublicClient,
   keccak256,
   encodePacked
 } from 'viem'
-import { somniaNetwork, SOMNIA_RPC_URL, SOMNIA_WS_URL } from '@somniaforge/sdk'
+import type { Address, Hash, WalletClient, PublicClient } from 'viem'
+import { somniaNetwork, SOMNIA_RPC_URL } from '@somniaforge/sdk'
 import { ROCK_PAPER_SCISSORS_ABI, ROCK_PAPER_SCISSORS_CONTRACT_ADDRESS } from '../constants/rockPaperScissorsAbi'
-import { RPSMove, RPSGameResult, RPSGameMove } from '../types/rockPaperScissors'
+import { RPSMove } from '../types/rockPaperScissors'
+import type { RPSGameResult, RPSGameMove } from '../types/rockPaperScissors'
 
 export class RockPaperScissorsManager {
   private publicClient: PublicClient
   private walletClient: WalletClient | null = null
-  private wsClient: PublicClient | null = null
 
-  constructor(rpcUrl: string = SOMNIA_RPC_URL, wsUrl: string = SOMNIA_WS_URL) {
+  constructor(rpcUrl: string = SOMNIA_RPC_URL) {
     this.publicClient = createPublicClient({
       chain: somniaNetwork,
       transport: http(rpcUrl),
-    })
-
-    this.wsClient = createPublicClient({
-      chain: somniaNetwork,
-      transport: webSocket(wsUrl),
     })
   }
 

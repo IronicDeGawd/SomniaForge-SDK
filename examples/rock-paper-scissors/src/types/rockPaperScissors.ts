@@ -1,11 +1,13 @@
-import { Address } from 'viem'
+import type { Address } from 'viem'
 
-export enum RPSMove {
-  None = 0,
-  Rock = 1,
-  Paper = 2,
-  Scissors = 3
-}
+export const RPSMove = {
+  None: 0,
+  Rock: 1,
+  Paper: 2,
+  Scissors: 3,
+} as const
+
+export type RPSMove = typeof RPSMove[keyof typeof RPSMove]
 
 export interface RPSGameResult {
   winner: Address

@@ -2,7 +2,8 @@ import { useState, useEffect, useCallback } from 'react'
 import { SomniaGameSDK } from '@somniaforge/sdk'
 import { parseEther } from 'viem'
 import { RockPaperScissorsManager } from '../managers/RockPaperScissorsManager'
-import { RPSMove, RPSGameResult, GameState } from '../types/rockPaperScissors'
+import { RPSMove } from '../types/rockPaperScissors'
+import type { RPSGameResult, GameState } from '../types/rockPaperScissors'
 
 export function useRockPaperScissors(sdk: SomniaGameSDK | null) {
   const [gameState, setGameState] = useState<GameState>('idle')
@@ -57,6 +58,19 @@ export function useRockPaperScissors(sdk: SomniaGameSDK | null) {
       setGameState('idle')
     }
   }, [sdk, rpsManager])
+
+  const checkGameResult = useCallback(async () => {
+    if (!sdk || !currentSession) return
+    
+    try {
+      const result = await rpsManager.getGameResult(BigInt(currentSession))
+      setGameResult(result)
+      setGameState('finished')
+    } catch (err) {
+      // Game might not be finished yet
+      console.log('Game not finished yet or error getting result:', err)
+    }
+  }, [sdk, currentSession, rpsManager])
 
   const commitMove = useCallback(async (move: 'rock' | 'paper' | 'scissors', nonce?: bigint) => {
     if (!sdk || !currentSession) return
@@ -130,19 +144,6 @@ export function useRockPaperScissors(sdk: SomniaGameSDK | null) {
       setError(`Failed to force resolve game: ${err}`)
     }
   }, [sdk, currentSession, checkGameResult])
-
-  const checkGameResult = useCallback(async () => {
-    if (!sdk || !currentSession) return
-    
-    try {
-      const result = await rpsManager.getGameResult(BigInt(currentSession))
-      setGameResult(result)
-      setGameState('finished')
-    } catch (err) {
-      // Game might not be finished yet
-      console.log('Game not finished yet or error getting result:', err)
-    }
-  }, [sdk, currentSession])
 
   const getRevealDeadline = useCallback(async () => {
     if (!sdk || !currentSession) return
