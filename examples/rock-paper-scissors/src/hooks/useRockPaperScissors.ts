@@ -17,16 +17,26 @@ export function useRockPaperScissors(sdk: SomniaGameSDK | null) {
   const [rpsManager] = useState(() => new RockPaperScissorsManager())
 
   useEffect(() => {
-    if (sdk && sdk.wallet.isConnected()) {
-      const walletClient = sdk.wallet.getWalletClient()
-      if (walletClient) {
-        rpsManager.connectWallet(walletClient)
+    const connectRPSManager = async () => {
+      if (sdk && sdk.wallet.isConnected()) {
+        const walletClient = sdk.wallet.getWalletClient()
+        if (walletClient) {
+          try {
+            await rpsManager.connectWallet(walletClient)
+          } catch (err) {
+            console.error('Failed to connect RPS Manager to wallet:', err)
+          }
+        }
       }
     }
-  }, [sdk, rpsManager])
+    connectRPSManager()
+  }, [sdk, rpsManager, sdk?.wallet.isConnected()])
 
   const createGame = useCallback(async (entryFeeETH: string = '0.01') => {
-    if (!sdk) return
+    if (!sdk) {
+      setError('SDK not available')
+      return
+    }
     
     try {
       setGameState('creating')
