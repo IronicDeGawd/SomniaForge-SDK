@@ -4,11 +4,11 @@ import { parseEther } from 'viem'
 import { RockPaperScissorsManager } from '../managers/RockPaperScissorsManager'
 import { RPSMove } from '../types/rockPaperScissors'
 import type { RPSGameResult, GameState } from '../types/rockPaperScissors'
+import { ROCK_PAPER_SCISSORS_ABI } from '../constants/rockPaperScissorsAbi'
 
 export function useRockPaperScissors(sdk: SomniaGameSDK | null) {
   const [gameState, setGameState] = useState<GameState>('idle')
   const [currentSession, setCurrentSession] = useState<string | null>(null)
-  const [players, setPlayers] = useState<string[]>([])
   const [gameResult, setGameResult] = useState<RPSGameResult | null>(null)
   const [error, setError] = useState<string>('')
   const [revealDeadline, setRevealDeadline] = useState<number>(0)
@@ -22,15 +22,21 @@ export function useRockPaperScissors(sdk: SomniaGameSDK | null) {
         const walletClient = sdk.wallet.getWalletClient()
         if (walletClient) {
           try {
+            console.log('Connecting RPS Manager to wallet...')
             await rpsManager.connectWallet(walletClient)
+            console.log('RPS Manager connected successfully')
           } catch (err) {
             console.error('Failed to connect RPS Manager to wallet:', err)
           }
+        } else {
+          console.log('No wallet client available')
         }
+      } else {
+        console.log('SDK not available or wallet not connected')
       }
     }
     connectRPSManager()
-  }, [sdk, rpsManager, sdk?.wallet.isConnected()])
+  }, [sdk, rpsManager])
 
   const createGame = useCallback(async (entryFeeETH: string = '0.01') => {
     if (!sdk) {
@@ -38,9 +44,20 @@ export function useRockPaperScissors(sdk: SomniaGameSDK | null) {
       return
     }
     
+    if (!sdk.wallet.isConnected()) {
+      setError('Wallet not connected')
+      return
+    }
+    
     try {
       setGameState('creating')
       setError('')
+      
+      // Ensure RPS manager has wallet connection
+      const walletClient = sdk.wallet.getWalletClient()
+      if (walletClient) {
+        await rpsManager.connectWallet(walletClient)
+      }
       
       const entryFee = parseEther(entryFeeETH)
       const sessionId = await rpsManager.createRPSGame(entryFee)
@@ -55,9 +72,20 @@ export function useRockPaperScissors(sdk: SomniaGameSDK | null) {
   const joinGame = useCallback(async (sessionId: string, entryFeeETH: string = '0.01') => {
     if (!sdk) return
     
+    if (!sdk.wallet.isConnected()) {
+      setError('Wallet not connected')
+      return
+    }
+    
     try {
       setGameState('joining')
       setError('')
+      
+      // Ensure RPS manager has wallet connection
+      const walletClient = sdk.wallet.getWalletClient()
+      if (walletClient) {
+        await rpsManager.connectWallet(walletClient)
+      }
       
       const entryFee = parseEther(entryFeeETH)
       await rpsManager.joinRPSGame(BigInt(sessionId), entryFee)
@@ -199,19 +227,28 @@ export function useRockPaperScissors(sdk: SomniaGameSDK | null) {
 
     const setupEventListeners = async () => {
       try {
-        const subId = await sdk.webSocket.subscribeToSessionEvents(
-          BigInt(currentSession),
+        // Subscribe to RockPaperScissors contract events for this session
+        const subId = await sdk.webSocket.subscribeToRockPaperScissorsEvents(
+          '0x38e4C113767fC478B17b15Cee015ab8452f28F93' as `0x${string}`,
+          ROCK_PAPER_SCISSORS_ABI as any[],
+          { sessionId: BigInt(currentSession) },
           (event) => {
             console.log('🎮 RPS Game Event:', event.eventName, event.args)
             
             switch (event.eventName) {
               case 'PlayerJoined': {
                 const playerCount = event.args.playerCount as number
+                console.log('Player joined, count:', playerCount)
                 if (playerCount === 2) {
                   setGameState('committing')
                 }
                 break
               }
+              
+              case 'SessionStarted':
+                console.log('Session started:', event.args)
+                setGameState('committing')
+                break
                 
               case 'MoveCommitted':
                 console.log('Move committed by:', event.args.player)
@@ -279,7 +316,6 @@ export function useRockPaperScissors(sdk: SomniaGameSDK | null) {
   return {
     gameState,
     currentSession,
-    players,
     gameResult,
     error,
     revealDeadline,

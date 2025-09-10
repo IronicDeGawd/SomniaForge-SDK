@@ -1,7 +1,6 @@
 import {
   createPublicClient,
   webSocket,
-  parseEventLogs,
   decodeEventLog,
   Address,
   Hash,
@@ -134,10 +133,11 @@ export class WebSocketManager {
     this.eventCallbacks.set(callbackId, callback)
 
     try {
-      // Subscribe to all GameSession events
+      // Subscribe to contract events (use specified address or default to GameSession)
+      const contractAddress = filter.contractAddress || CONTRACT_ADDRESSES.GAME_SESSION
       const unwatch = this.wsClient!.watchContractEvent({
-        address: CONTRACT_ADDRESSES.GAME_SESSION,
-        abi: GAME_SESSION_ABI,
+        address: contractAddress,
+        abi: GAME_SESSION_ABI, // Note: This should be dynamic based on contract
         onLogs: (logs) => {
           logs.forEach((log) => {
             try {
@@ -201,6 +201,65 @@ export class WebSocketManager {
       { playerAddress },
       callback
     )
+  }
+
+  /**
+   * Subscribe to RockPaperScissors contract events
+   */
+  async subscribeToRockPaperScissorsEvents(
+    contractAddress: Address,
+    contractAbi: any[],
+    filter: WebSocketEventFilter = {},
+    callback: WebSocketEventCallback
+  ): Promise<string> {
+    if (!this.isWebSocketConnected()) {
+      throw new Error('WebSocket not connected')
+    }
+
+    const callbackId = `rps_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+    this.eventCallbacks.set(callbackId, callback)
+
+    try {
+      const unwatch = this.wsClient!.watchContractEvent({
+        address: contractAddress,
+        abi: contractAbi,
+        onLogs: (logs) => {
+          logs.forEach((log) => {
+            try {
+              const decoded = decodeEventLog({
+                abi: contractAbi,
+                data: log.data,
+                topics: log.topics,
+              })
+
+              // Apply filters
+              if (this.shouldProcessEvent(decoded as any, log, filter)) {
+                callback({
+                  eventName: (decoded as any).eventName,
+                  args: (decoded as any).args || {},
+                  transactionHash: log.transactionHash,
+                  blockNumber: log.blockNumber!,
+                  logIndex: log.logIndex!,
+                  removed: log.removed!,
+                })
+              }
+            } catch (error) {
+              console.warn('Error decoding RPS log:', error)
+            }
+          })
+        },
+        onError: (error) => {
+          console.error('WebSocket RPS event error:', error)
+          this.handleConnectionError()
+        },
+      })
+
+      this.activeWatchers.set(callbackId, unwatch)
+      return callbackId
+    } catch (error) {
+      this.eventCallbacks.delete(callbackId)
+      throw new Error(`Failed to subscribe to RPS events: ${error}`)
+    }
   }
 
   /**
@@ -353,6 +412,10 @@ export class WebSocketManager {
       try {
         if (id.startsWith('gamesession_')) {
           await this.subscribeToGameSessionEvents({}, callback)
+        } else if (id.startsWith('rps_')) {
+          // For RPS subscriptions, we'd need to store more context
+          // For now, just log that we couldn't resubscribe
+          console.warn(`Cannot auto-resubscribe to RPS subscription ${id} - manual resubscription needed`)
         }
         // Add other subscription types as needed
       } catch (error) {
