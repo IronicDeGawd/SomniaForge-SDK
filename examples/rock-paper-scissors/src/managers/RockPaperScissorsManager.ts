@@ -273,7 +273,7 @@ export class RockPaperScissorsManager {
     }
   }
 
-  async withdrawToWallet(): Promise<Hash> {
+  async withdraw(): Promise<Hash> {
     if (!this.walletClient) {
       throw new Error('Wallet not connected')
     }

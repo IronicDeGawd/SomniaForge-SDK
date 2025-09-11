@@ -322,12 +322,10 @@ export function useRockPaperScissors(sdk: SomniaGameSDK | null) {
           // Session status check failed - continue with subscription setup
         }
         
-        const subId = await sdk.webSocket.subscribeToGameSessionEvents(
-          { 
-            sessionId: BigInt(currentSession),
-            contractAddress: ROCK_PAPER_SCISSORS_CONTRACT_ADDRESS,
-            abi: ROCK_PAPER_SCISSORS_ABI
-          },
+        const subId = await sdk.webSocket.subscribeToRockPaperScissorsEvents(
+          ROCK_PAPER_SCISSORS_CONTRACT_ADDRESS,
+          ROCK_PAPER_SCISSORS_ABI,
+          { sessionId: BigInt(currentSession) },
           (event) => {            
             switch (event.eventName) {
               case 'PlayerJoined': {
