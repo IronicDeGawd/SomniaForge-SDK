@@ -1,9 +1,10 @@
 import {
   createPublicClient,
   http,
-  decodeEventLog,
   keccak256,
-  encodePacked
+  encodePacked,
+  parseEther,
+  decodeEventLog
 } from 'viem'
 import type { Address, Hash, WalletClient, PublicClient } from 'viem'
 import { somniaNetwork, SOMNIA_RPC_URL } from '@somniaforge/sdk'
@@ -35,64 +36,56 @@ export class RockPaperScissorsManager {
     )
   }
 
-  async createRPSGame(entryFee: bigint): Promise<bigint> {
+  async createRPSGame(entryFee: bigint = parseEther('0.01')): Promise<bigint> {
     if (!this.walletClient) {
       throw new Error('Wallet not connected')
     }
 
-    try {
-      const hash = await this.walletClient.writeContract({
-        address: ROCK_PAPER_SCISSORS_CONTRACT_ADDRESS,
-        abi: ROCK_PAPER_SCISSORS_ABI,
-        functionName: 'createRPSGame',
-        args: [entryFee],
-        value: entryFee,
-        account: this.walletClient.account!,
-        chain: somniaNetwork,
-      })
+    const hash = await this.walletClient.writeContract({
+      address: ROCK_PAPER_SCISSORS_CONTRACT_ADDRESS,
+      abi: ROCK_PAPER_SCISSORS_ABI,
+      functionName: 'createRPSGame',
+      args: [entryFee],
+      value: entryFee,
+      chain: somniaNetwork,
+      account: this.walletClient.account!,
+    })
 
-      const receipt = await this.publicClient.waitForTransactionReceipt({ hash })
-      
-      for (const log of receipt.logs) {
-        try {
-          const decoded = decodeEventLog({
-            abi: ROCK_PAPER_SCISSORS_ABI,
-            data: log.data,
-            topics: log.topics,
-          })
-          
-          if (decoded.eventName === 'SessionCreated') {
-            return (decoded.args as any).sessionId as bigint
-          }
-        } catch (error) {
-          continue
+    const receipt = await this.publicClient.waitForTransactionReceipt({ hash })
+    
+    for (const log of receipt.logs) {
+      try {
+        const decoded = decodeEventLog({
+          abi: ROCK_PAPER_SCISSORS_ABI,
+          data: log.data,
+          topics: log.topics,
+        })
+        
+        if (decoded.eventName === 'SessionCreated') {
+          return (decoded.args as { sessionId: bigint }).sessionId
         }
+      } catch {
+        continue
       }
-
-      throw new Error('Session ID not found in transaction logs')
-    } catch (error) {
-      throw new Error(`Failed to create RPS game: ${error}`)
     }
+
+    throw new Error('Session ID not found in transaction logs')
   }
 
-  async joinRPSGame(sessionId: bigint, entryFee: bigint): Promise<Hash> {
+  async joinRPSGame(sessionId: bigint, entryFee: bigint = parseEther('0.01')): Promise<Hash> {
     if (!this.walletClient) {
       throw new Error('Wallet not connected')
     }
 
-    try {
-      return await this.walletClient.writeContract({
-        address: ROCK_PAPER_SCISSORS_CONTRACT_ADDRESS,
-        abi: ROCK_PAPER_SCISSORS_ABI,
-        functionName: 'joinRPSGame',
-        args: [sessionId],
-        value: entryFee,
-        account: this.walletClient.account!,
-        chain: somniaNetwork,
-      })
-    } catch (error) {
-      throw new Error(`Failed to join RPS game: ${error}`)
-    }
+    return await this.walletClient.writeContract({
+      address: ROCK_PAPER_SCISSORS_CONTRACT_ADDRESS,
+      abi: ROCK_PAPER_SCISSORS_ABI,
+      functionName: 'joinRPSGame',
+      args: [sessionId],
+      value: entryFee,
+      chain: somniaNetwork,
+      account: this.walletClient.account!,
+    })
   }
 
   async commitMove(sessionId: bigint, moveHash: Hash): Promise<Hash> {
@@ -106,8 +99,8 @@ export class RockPaperScissorsManager {
         abi: ROCK_PAPER_SCISSORS_ABI,
         functionName: 'commitMove',
         args: [sessionId, moveHash],
-        account: this.walletClient.account!,
         chain: somniaNetwork,
+        account: this.walletClient.account!,
       })
     } catch (error) {
       throw new Error(`Failed to commit move: ${error}`)
@@ -125,8 +118,8 @@ export class RockPaperScissorsManager {
         abi: ROCK_PAPER_SCISSORS_ABI,
         functionName: 'revealMove',
         args: [sessionId, move, nonce],
-        account: this.walletClient.account!,
         chain: somniaNetwork,
+        account: this.walletClient.account!,
       })
     } catch (error) {
       throw new Error(`Failed to reveal move: ${error}`)
@@ -144,8 +137,8 @@ export class RockPaperScissorsManager {
         abi: ROCK_PAPER_SCISSORS_ABI,
         functionName: 'forceResolveGame',
         args: [sessionId],
-        account: this.walletClient.account!,
         chain: somniaNetwork,
+        account: this.walletClient.account!,
       })
     } catch (error) {
       throw new Error(`Failed to force resolve game: ${error}`)
@@ -159,7 +152,14 @@ export class RockPaperScissorsManager {
         abi: ROCK_PAPER_SCISSORS_ABI,
         functionName: 'getGameResult',
         args: [sessionId],
-      }) as any
+      }) as {
+        winner: Address
+        players: Address[]
+        moves: RPSMove[]
+        prizeAmount: bigint
+        isDraw: boolean
+        completedAt: bigint
+      }
 
       return {
         winner: result.winner,
@@ -181,7 +181,11 @@ export class RockPaperScissorsManager {
         abi: ROCK_PAPER_SCISSORS_ABI,
         functionName: 'getPlayerGameMove',
         args: [sessionId, player],
-      }) as any
+      }) as {
+        move: RPSMove
+        nonce: bigint
+        revealed: boolean
+      }
 
       return {
         move: result.move,
@@ -238,22 +242,63 @@ export class RockPaperScissorsManager {
     }
   }
 
-  async withdraw(): Promise<Hash> {
+  async isSessionActive(sessionId: bigint): Promise<boolean> {
+    try {
+      const result = await this.publicClient.readContract({
+        address: ROCK_PAPER_SCISSORS_CONTRACT_ADDRESS,
+        abi: ROCK_PAPER_SCISSORS_ABI,
+        functionName: 'isSessionActive',
+        args: [sessionId],
+      }) as boolean
+
+      return result
+    } catch (error) {
+      throw new Error(`Failed to check session status: ${error}`)
+    }
+  }
+
+  async getSessionData(sessionId: bigint): Promise<unknown> {
+    try {
+      const result = await this.publicClient.readContract({
+        address: ROCK_PAPER_SCISSORS_CONTRACT_ADDRESS,
+        abi: ROCK_PAPER_SCISSORS_ABI,
+        functionName: 'sessions',
+        args: [sessionId],
+      })
+
+      return result
+    } catch (error) {
+      throw new Error(`Failed to get session data: ${error}`)
+    }
+  }
+
+  async withdrawToWallet(): Promise<Hash> {
     if (!this.walletClient) {
       throw new Error('Wallet not connected')
     }
 
+    return await this.walletClient.writeContract({
+      address: ROCK_PAPER_SCISSORS_CONTRACT_ADDRESS,
+      abi: ROCK_PAPER_SCISSORS_ABI,
+      functionName: 'withdrawBalance',
+      args: [],
+      chain: somniaNetwork,
+      account: this.walletClient.account!,
+    })
+  }
+
+  async getUserBalance(userAddress: Address): Promise<bigint> {
     try {
-      return await this.walletClient.writeContract({
+      const balance = await this.publicClient.readContract({
         address: ROCK_PAPER_SCISSORS_CONTRACT_ADDRESS,
         abi: ROCK_PAPER_SCISSORS_ABI,
-        functionName: 'withdraw',
-        args: [],
-        account: this.walletClient.account!,
-        chain: somniaNetwork,
-      })
+        functionName: 'playerBalances',
+        args: [userAddress],
+      }) as bigint
+
+      return balance
     } catch (error) {
-      throw new Error(`Failed to withdraw: ${error}`)
+      throw new Error(`Failed to get user balance: ${error}`)
     }
   }
 }

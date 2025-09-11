@@ -10,6 +10,7 @@ import { detectAvailableWallets, switchToSomniaNetwork, addSomniaNetwork } from 
 import { useRockPaperScissors } from './hooks/useRockPaperScissors'
 import { GameTimer } from './components/GameTimer'
 import { PlayerStatus } from './components/PlayerStatus'
+import { getActionText } from './utils/errorHandler'
 
 type Move = 'rock' | 'paper' | 'scissors' | null
 type ConnectionState = 'disconnected' | 'connecting' | 'connected'
@@ -209,19 +210,57 @@ function App() {
   const ErrorDisplay = () => {
     if (!error && !rpsGame.error) return null
     
-    const displayError = error || rpsGame.error
+    const gameError = rpsGame.error
+    const displayError = error || (gameError ? gameError.message : '')
+    const actionText = gameError ? getActionText(gameError.action) : 'OK'
     
     return (
       <div style={{
         background: '#FEE2E2',
         border: '1px solid #FECACA',
         color: '#DC2626',
-        padding: '12px',
+        padding: '16px',
         borderRadius: '8px',
         marginBottom: '16px',
-        fontSize: '14px'
       }}>
-        ⚠️ {displayError}
+        <div style={{ 
+          fontSize: '16px', 
+          fontWeight: 'bold', 
+          marginBottom: '8px' 
+        }}>
+          ⚠️ {gameError?.title || 'Error'}
+        </div>
+        <div style={{ 
+          fontSize: '14px', 
+          marginBottom: '12px' 
+        }}>
+          {displayError}
+        </div>
+        {gameError && (
+          <button
+            onClick={() => {
+              if (gameError.action === 'retry') {
+                setError('')
+                rpsGame.actions.resetGame()
+              } else if (gameError.action === 'connect') {
+                handleWalletConnect()
+              } else {
+                setError('')
+              }
+            }}
+            style={{
+              background: '#DC2626',
+              color: 'white',
+              border: 'none',
+              padding: '8px 16px',
+              borderRadius: '6px',
+              fontSize: '14px',
+              cursor: 'pointer',
+            }}
+          >
+            {actionText}
+          </button>
+        )}
       </div>
     )
   }
@@ -318,8 +357,11 @@ function App() {
                     justifyContent: 'center',
                     flexWrap: 'wrap'
                   }}>
-                    <SomniaButton onClick={() => rpsGame.actions.createGame()}>
-                      🆕 Create New Game
+                    <SomniaButton 
+                      onClick={() => rpsGame.actions.createGame()}
+                      disabled={rpsGame.isTransactionPending}
+                    >
+                      {rpsGame.isTransactionPending ? '⏳ Creating...' : '🆕 Create New Game'}
                     </SomniaButton>
                     
                     <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
@@ -337,10 +379,10 @@ function App() {
                       />
                       <SomniaButton 
                         onClick={() => rpsGame.actions.joinGame(sessionToJoin)}
-                        disabled={!sessionToJoin.trim()}
+                        disabled={!sessionToJoin.trim() || rpsGame.isTransactionPending}
                         variant="secondary"
                       >
-                        🚪 Join Game
+                        {rpsGame.isTransactionPending ? '⏳ Joining...' : '🚪 Join Game'}
                       </SomniaButton>
                     </div>
                   </div>
@@ -382,6 +424,7 @@ function App() {
                       <SomniaButton
                         key={move}
                         onClick={() => makeMove(move)}
+                        disabled={rpsGame.isTransactionPending}
                         size="lg"
                       >
                         <div style={{ fontSize: '2rem' }}>{getMoveEmoji(move)}</div>
@@ -399,6 +442,20 @@ function App() {
               <Card>
                 <div style={{ textAlign: 'center', padding: '40px' }}>
                   <h2 style={{ marginBottom: '20px' }}>Reveal Phase</h2>
+                  
+                  {rpsGame.autoRevealCountdown > 0 && (
+                    <div style={{ 
+                      marginBottom: '30px',
+                      padding: '20px',
+                      backgroundColor: 'rgba(83, 109, 254, 0.1)',
+                      borderRadius: '8px',
+                      border: '1px solid rgba(83, 109, 254, 0.3)'
+                    }}>
+                      <h3 style={{ marginBottom: '10px', color: '#536DFE' }}>⏰ Auto-reveal in {rpsGame.autoRevealCountdown}s</h3>
+                      <p style={{ fontSize: '14px', opacity: 0.8 }}>Your move will be automatically revealed</p>
+                    </div>
+                  )}
+                  
                   {selectedMove && (
                     <div style={{ marginBottom: '30px' }}>
                       <p>Your move: {getMoveEmoji(selectedMove)} {selectedMove?.toUpperCase()}</p>
@@ -414,14 +471,23 @@ function App() {
                     </div>
                   )}
                   
-                  <SomniaButton onClick={handleRevealMove}>
-                    🎭 Reveal Move
+                  <SomniaButton 
+                    onClick={handleRevealMove}
+                    disabled={rpsGame.autoRevealCountdown > 0 || rpsGame.isTransactionPending || rpsGame.hasRevealed}
+                  >
+                    {rpsGame.hasRevealed ? '✅ Move Revealed' : 
+                     rpsGame.isTransactionPending ? '⏳ Revealing...' :
+                     rpsGame.autoRevealCountdown > 0 ? '⏳ Auto-revealing...' : '🎭 Reveal Move'}
                   </SomniaButton>
                   
                   {rpsGame.revealDeadline > 0 && Date.now() > rpsGame.revealDeadline && (
                     <div style={{ marginTop: '20px' }}>
-                      <SomniaButton onClick={handleForceResolve} variant="secondary">
-                        ⚡ Force Resolve
+                      <SomniaButton 
+                        onClick={handleForceResolve} 
+                        disabled={rpsGame.isTransactionPending}
+                        variant="secondary"
+                      >
+                        {rpsGame.isTransactionPending ? '⏳ Resolving...' : '⚡ Force Resolve'}
                       </SomniaButton>
                     </div>
                   )}
@@ -463,9 +529,15 @@ function App() {
                     <SomniaButton onClick={handleNewGame}>
                       🔄 Play Again
                     </SomniaButton>
-                    <SomniaButton onClick={rpsGame.actions.withdraw} variant="secondary">
-                      💰 Withdraw Winnings
-                    </SomniaButton>
+                    {(rpsGame.gameResult.winner.toLowerCase() === account.toLowerCase() || rpsGame.gameResult.isDraw) && (
+                      <SomniaButton 
+                        onClick={rpsGame.actions.withdraw} 
+                        disabled={rpsGame.isTransactionPending}
+                        variant="primary"
+                      >
+                        {rpsGame.isTransactionPending ? '⏳ Withdrawing...' : `💰 Withdraw ${rpsGame.gameResult.isDraw ? 'Entry Fee' : 'Winnings'}`}
+                      </SomniaButton>
+                    )}
                   </div>
                 </div>
               </Card>

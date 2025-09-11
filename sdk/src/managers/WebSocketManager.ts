@@ -15,6 +15,7 @@ export interface WebSocketEventFilter {
   sessionId?: bigint
   playerAddress?: Address
   eventNames?: string[]
+  abi?: any[]
 }
 
 export interface WebSocketEventCallback {
@@ -135,14 +136,16 @@ export class WebSocketManager {
     try {
       // Subscribe to contract events (use specified address or default to GameSession)
       const contractAddress = filter.contractAddress || CONTRACT_ADDRESSES.GAME_SESSION
+      const contractAbi = filter.abi || GAME_SESSION_ABI
+      
       const unwatch = this.wsClient!.watchContractEvent({
         address: contractAddress,
-        abi: GAME_SESSION_ABI, // Note: This should be dynamic based on contract
+        abi: contractAbi,
         onLogs: (logs) => {
           logs.forEach((log) => {
             try {
               const decoded = decodeEventLog({
-                abi: GAME_SESSION_ABI,
+                abi: contractAbi,
                 data: log.data,
                 topics: log.topics,
               })
@@ -150,8 +153,8 @@ export class WebSocketManager {
               // Apply filters
               if (this.shouldProcessEvent(decoded, log, filter)) {
                 callback({
-                  eventName: decoded.eventName,
-                  args: decoded.args || {},
+                  eventName: (decoded as any).eventName,
+                  args: (decoded as any).args || {},
                   transactionHash: log.transactionHash,
                   blockNumber: log.blockNumber!,
                   logIndex: log.logIndex!,

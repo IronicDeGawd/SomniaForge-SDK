@@ -1,20 +1,28 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { SomniaGameSDK } from '@somniaforge/sdk'
 import { parseEther } from 'viem'
 import { RockPaperScissorsManager } from '../managers/RockPaperScissorsManager'
 import { RPSMove } from '../types/rockPaperScissors'
 import type { RPSGameResult, GameState } from '../types/rockPaperScissors'
-import { ROCK_PAPER_SCISSORS_ABI } from '../constants/rockPaperScissorsAbi'
+import { parseGameError } from '../utils/errorHandler'
+import type { GameError } from '../utils/errorHandler'
+import { ROCK_PAPER_SCISSORS_ABI, ROCK_PAPER_SCISSORS_CONTRACT_ADDRESS } from '../constants/rockPaperScissorsAbi'
 
 export function useRockPaperScissors(sdk: SomniaGameSDK | null) {
   const [gameState, setGameState] = useState<GameState>('idle')
   const [currentSession, setCurrentSession] = useState<string | null>(null)
   const [gameResult, setGameResult] = useState<RPSGameResult | null>(null)
-  const [error, setError] = useState<string>('')
+  const [error, setError] = useState<GameError | null>(null)
   const [revealDeadline, setRevealDeadline] = useState<number>(0)
   const [playerMoves, setPlayerMoves] = useState<Map<string, { committed: boolean, revealed: boolean }>>(new Map())
+  const [autoRevealCountdown, setAutoRevealCountdown] = useState<number>(0)
+  const [isTransactionPending, setIsTransactionPending] = useState<boolean>(false)
+  const [hasRevealed, setHasRevealed] = useState<boolean>(false)
   
   const [rpsManager] = useState(() => new RockPaperScissorsManager())
+  const autoRevealTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const countdownTimer = useRef<ReturnType<typeof setInterval> | null>(null)
+  const wsSubscriptionId = useRef<string | null>(null)
 
   useEffect(() => {
     const connectRPSManager = async () => {
@@ -22,17 +30,11 @@ export function useRockPaperScissors(sdk: SomniaGameSDK | null) {
         const walletClient = sdk.wallet.getWalletClient()
         if (walletClient) {
           try {
-            console.log('Connecting RPS Manager to wallet...')
             await rpsManager.connectWallet(walletClient)
-            console.log('RPS Manager connected successfully')
-          } catch (err) {
-            console.error('Failed to connect RPS Manager to wallet:', err)
+          } catch {
+            // Failed to connect RPS Manager to wallet
           }
-        } else {
-          console.log('No wallet client available')
         }
-      } else {
-        console.log('SDK not available or wallet not connected')
       }
     }
     connectRPSManager()
@@ -40,20 +42,24 @@ export function useRockPaperScissors(sdk: SomniaGameSDK | null) {
 
   const createGame = useCallback(async (entryFeeETH: string = '0.01') => {
     if (!sdk) {
-      setError('SDK not available')
+      setError(parseGameError('SDK not available'))
       return
     }
     
     if (!sdk.wallet.isConnected()) {
-      setError('Wallet not connected')
+      setError(parseGameError('Wallet not connected'))
+      return
+    }
+
+    if (isTransactionPending) {
       return
     }
     
     try {
+      setIsTransactionPending(true)
       setGameState('creating')
-      setError('')
+      setError(null)
       
-      // Ensure RPS manager has wallet connection
       const walletClient = sdk.wallet.getWalletClient()
       if (walletClient) {
         await rpsManager.connectWallet(walletClient)
@@ -64,24 +70,30 @@ export function useRockPaperScissors(sdk: SomniaGameSDK | null) {
       setCurrentSession(sessionId.toString())
       setGameState('waiting')
     } catch (err) {
-      setError(`Failed to create game: ${err}`)
+      setError(parseGameError(err))
       setGameState('idle')
+    } finally {
+      setIsTransactionPending(false)
     }
-  }, [sdk, rpsManager])
+  }, [sdk, rpsManager, isTransactionPending])
 
   const joinGame = useCallback(async (sessionId: string, entryFeeETH: string = '0.01') => {
     if (!sdk) return
     
     if (!sdk.wallet.isConnected()) {
-      setError('Wallet not connected')
+      setError(parseGameError('Wallet not connected'))
+      return
+    }
+
+    if (isTransactionPending) {
       return
     }
     
     try {
+      setIsTransactionPending(true)
       setGameState('joining')
-      setError('')
+      setError(null)
       
-      // Ensure RPS manager has wallet connection
       const walletClient = sdk.wallet.getWalletClient()
       if (walletClient) {
         await rpsManager.connectWallet(walletClient)
@@ -92,64 +104,73 @@ export function useRockPaperScissors(sdk: SomniaGameSDK | null) {
       setCurrentSession(sessionId)
       setGameState('waiting')
     } catch (err) {
-      setError(`Failed to join game: ${err}`)
+      setError(parseGameError(err))
       setGameState('idle')
+    } finally {
+      setIsTransactionPending(false)
     }
-  }, [sdk, rpsManager])
+  }, [sdk, rpsManager, isTransactionPending])
 
   const checkGameResult = useCallback(async () => {
     if (!sdk || !currentSession) return
     
     try {
       const result = await rpsManager.getGameResult(BigInt(currentSession))
-      setGameResult(result)
-      setGameState('finished')
-    } catch (err) {
-      // Game might not be finished yet
-      console.log('Game not finished yet or error getting result:', err)
+      if (result) {
+        setGameResult(result)
+        setGameState('finished')
+      }
+    } catch {
+      // Game not finished yet or error getting result
     }
   }, [sdk, currentSession, rpsManager])
 
   const commitMove = useCallback(async (move: 'rock' | 'paper' | 'scissors', nonce?: bigint) => {
     if (!sdk || !currentSession) return
+
+    if (isTransactionPending) {
+      return
+    }
     
     try {
-      setError('')
+      setIsTransactionPending(true)
+      setError(null)
       setGameState('committing')
       
       const account = sdk.wallet.getCurrentAccount()
       if (!account) throw new Error('No account connected')
       
-      // Convert string move to RPSMove enum
       const rpsMove = move === 'rock' ? RPSMove.Rock : 
                      move === 'paper' ? RPSMove.Paper : RPSMove.Scissors
       
-      // Generate random nonce if not provided
       const moveNonce = nonce || BigInt(Math.floor(Math.random() * 1000000))
-      
-      // Create move hash using the manager's static method
       const moveHash = RockPaperScissorsManager.createMoveHash(account, rpsMove, moveNonce)
       
       await rpsManager.commitMove(BigInt(currentSession), moveHash)
       
-      // Store nonce for reveal phase (in a real app, this should be stored securely)
       ;(window as unknown as { gameNonce: bigint }).gameNonce = moveNonce
       ;(window as unknown as { gameMove: RPSMove }).gameMove = rpsMove
       
       setGameState('revealing')
     } catch (err) {
-      setError(`Failed to commit move: ${err}`)
+      setError(parseGameError(err))
       setGameState('waiting')
+    } finally {
+      setIsTransactionPending(false)
     }
-  }, [sdk, currentSession])
+  }, [sdk, currentSession, isTransactionPending, rpsManager])
 
   const revealMove = useCallback(async () => {
     if (!sdk || !currentSession) return
+
+    if (hasRevealed || isTransactionPending) {
+      return
+    }
     
     try {
-      setError('')
+      setIsTransactionPending(true)
+      setError(null)
       
-      // Retrieve stored move and nonce
       const storedMove = (window as unknown as { gameMove: RPSMove }).gameMove
       const storedNonce = (window as unknown as { gameNonce: bigint }).gameNonce
       
@@ -158,87 +179,121 @@ export function useRockPaperScissors(sdk: SomniaGameSDK | null) {
       }
       
       await rpsManager.revealMove(BigInt(currentSession), storedMove, storedNonce)
+      setHasRevealed(true)
       
-      // Game result will be updated via WebSocket events or polling
       setTimeout(() => {
         checkGameResult()
       }, 2000)
       
     } catch (err) {
-      setError(`Failed to reveal move: ${err}`)
+      setError(parseGameError(err))
+    } finally {
+      setIsTransactionPending(false)
     }
-  }, [sdk, currentSession, checkGameResult])
+  }, [sdk, currentSession, checkGameResult, hasRevealed, isTransactionPending, rpsManager])
 
   const forceResolveGame = useCallback(async () => {
     if (!sdk || !currentSession) return
+
+    if (isTransactionPending) {
+      return
+    }
     
     try {
-      setError('')
+      setIsTransactionPending(true)
+      setError(null)
       await rpsManager.forceResolveGame(BigInt(currentSession))
       setTimeout(() => {
         checkGameResult()
       }, 2000)
     } catch (err) {
-      setError(`Failed to force resolve game: ${err}`)
+      setError(parseGameError(err))
+    } finally {
+      setIsTransactionPending(false)
     }
-  }, [sdk, currentSession, checkGameResult])
+  }, [sdk, currentSession, checkGameResult, isTransactionPending, rpsManager])
 
-  const getRevealDeadline = useCallback(async () => {
-    if (!sdk || !currentSession) return
-    
-    try {
-      const deadline = await rpsManager.getRevealDeadline(BigInt(currentSession))
-      setRevealDeadline(Number(deadline) * 1000) // Convert to milliseconds
-    } catch (err) {
-      console.log('Could not get reveal deadline:', err)
-    }
-  }, [sdk, currentSession])
 
   const withdraw = useCallback(async () => {
     if (!sdk) return
+
+    if (isTransactionPending) {
+      return
+    }
     
     try {
-      setError('')
-      await rpsManager.withdraw()
+      setIsTransactionPending(true)
+      setError(null)
+      await rpsManager.withdrawToWallet()
     } catch (err) {
-      setError(`Failed to withdraw: ${err}`)
+      setError(parseGameError(err))
+    } finally {
+      setIsTransactionPending(false)
     }
-  }, [sdk, rpsManager])
+  }, [sdk, rpsManager, isTransactionPending])
 
   const resetGame = useCallback(() => {
+    // Clear timers
+    if (autoRevealTimer.current) {
+      clearTimeout(autoRevealTimer.current)
+      autoRevealTimer.current = null
+    }
+    if (countdownTimer.current) {
+      clearInterval(countdownTimer.current)
+      countdownTimer.current = null
+    }
+
+    // Unsubscribe from WebSocket events
+    if (wsSubscriptionId.current && sdk) {
+      sdk.webSocket.unsubscribe(wsSubscriptionId.current)
+      wsSubscriptionId.current = null
+    }
+
     setGameState('idle')
     setCurrentSession(null)
-    setPlayers([])
     setGameResult(null)
-    setError('')
+    setError(null)
     setRevealDeadline(0)
     setPlayerMoves(new Map())
+    setAutoRevealCountdown(0)
+    setIsTransactionPending(false)
+    setHasRevealed(false)
     
-    // Clear stored move data
     delete (window as unknown as { gameNonce?: bigint }).gameNonce
     delete (window as unknown as { gameMove?: RPSMove }).gameMove
-  }, [])
+  }, [sdk])
 
   // Effect to set up WebSocket event listeners
   useEffect(() => {
     if (!sdk || !currentSession || gameState === 'idle') return
 
-    let subscriptionId: string | null = null
+    // Prevent duplicate subscriptions
+    if (wsSubscriptionId.current) {
+      return
+    }
 
     const setupEventListeners = async () => {
       try {
-        // Subscribe to RockPaperScissors contract events for this session
-        const subId = await sdk.webSocket.subscribeToRockPaperScissorsEvents(
-          '0x38e4C113767fC478B17b15Cee015ab8452f28F93' as `0x${string}`,
-          ROCK_PAPER_SCISSORS_ABI as any[],
-          { sessionId: BigInt(currentSession) },
-          (event) => {
-            console.log('🎮 RPS Game Event:', event.eventName, event.args)
-            
+        // Check session status first
+        try {
+          const isActive = await rpsManager.isSessionActive(BigInt(currentSession))
+          if (isActive && gameState === 'waiting') {
+            setGameState('committing')
+          }
+        } catch {
+          // Session status check failed - continue with subscription setup
+        }
+        
+        const subId = await sdk.webSocket.subscribeToGameSessionEvents(
+          { 
+            sessionId: BigInt(currentSession),
+            contractAddress: ROCK_PAPER_SCISSORS_CONTRACT_ADDRESS,
+            abi: ROCK_PAPER_SCISSORS_ABI
+          },
+          (event) => {            
             switch (event.eventName) {
               case 'PlayerJoined': {
                 const playerCount = event.args.playerCount as number
-                console.log('Player joined, count:', playerCount)
                 if (playerCount === 2) {
                   setGameState('committing')
                 }
@@ -246,72 +301,108 @@ export function useRockPaperScissors(sdk: SomniaGameSDK | null) {
               }
               
               case 'SessionStarted':
-                console.log('Session started:', event.args)
                 setGameState('committing')
                 break
                 
-              case 'MoveCommitted':
-                console.log('Move committed by:', event.args.player)
-                // Update player move status
+              case 'MoveCommitted': {
+                const commitPlayer = event.args.player as string
                 setPlayerMoves(prev => {
-                  const newMap = new Map(prev)
-                  newMap.set(event.args.player as string, { 
-                    committed: true, 
-                    revealed: prev.get(event.args.player as string)?.revealed || false 
-                  })
-                  return newMap
+                  const updated = new Map(prev)
+                  updated.set(commitPlayer.toLowerCase(), { committed: true, revealed: false })
+                  return updated
                 })
                 break
+              }
+                
+              case 'MoveRevealed': {
+                const revealPlayer = event.args.player as string
+                setPlayerMoves(prev => {
+                  const updated = new Map(prev)
+                  const existing = updated.get(revealPlayer.toLowerCase()) || { committed: false, revealed: false }
+                  updated.set(revealPlayer.toLowerCase(), { ...existing, revealed: true })
+                  return updated
+                })
+                break
+              }
                 
               case 'RevealPhaseStarted': {
-                const deadline = Number(event.args.deadline) * 1000
-                setRevealDeadline(deadline)
+                const deadline = event.args.deadline as bigint
+                setRevealDeadline(Number(deadline))
                 setGameState('revealing')
                 break
               }
                 
-              case 'MoveRevealed':
-                console.log('Move revealed by:', event.args.player)
-                setPlayerMoves(prev => {
-                  const newMap = new Map(prev)
-                  newMap.set(event.args.player as string, { 
-                    committed: prev.get(event.args.player as string)?.committed || false,
-                    revealed: true 
-                  })
-                  return newMap
-                })
-                break
-                
               case 'GameResultDetermined':
-                console.log('Game finished, winner:', event.args.winner)
-                setTimeout(() => {
-                  checkGameResult()
-                }, 1000)
+                checkGameResult()
                 break
             }
           }
         )
-        subscriptionId = subId
-      } catch (error) {
-        console.error('Failed to setup RPS event listeners:', error)
+        
+        wsSubscriptionId.current = subId
+        
+      } catch (err) {
+        console.error('Failed to set up WebSocket listeners:', err)
       }
     }
-    
-    setupEventListeners()
-    
-    return () => {
-      if (subscriptionId && sdk) {
-        sdk.webSocket.unsubscribe(subscriptionId)
-      }
-    }
-  }, [sdk, currentSession, gameState, checkGameResult])
 
-  // Effect to poll reveal deadline when in revealing state
-  useEffect(() => {
-    if (gameState === 'revealing' && !revealDeadline) {
-      getRevealDeadline()
+    setupEventListeners()
+
+    // Cleanup function
+    return () => {
+      if (wsSubscriptionId.current && sdk) {
+        sdk.webSocket.unsubscribe(wsSubscriptionId.current)
+        wsSubscriptionId.current = null
+      }
     }
-  }, [gameState, revealDeadline, getRevealDeadline])
+  }, [sdk, currentSession, gameState, checkGameResult, rpsManager])
+
+  // Auto-reveal effect
+  useEffect(() => {
+    if (gameState !== 'revealing' || !revealDeadline || hasRevealed || isTransactionPending) return
+    
+    const currentTime = Math.floor(Date.now() / 1000)
+    const timeLeft = revealDeadline - currentTime
+    
+    if (timeLeft <= 0) return
+
+    const startCountdown = () => {
+      // Don't start countdown if already revealed or transaction pending
+      if (hasRevealed || isTransactionPending) return
+
+      setAutoRevealCountdown(10)
+      
+      countdownTimer.current = setInterval(() => {
+        setAutoRevealCountdown(prev => {
+          if (prev <= 1) {
+            if (countdownTimer.current) {
+              clearInterval(countdownTimer.current)
+              countdownTimer.current = null
+            }
+            // Only reveal if not already revealed and no pending transaction
+            if (!hasRevealed && !isTransactionPending) {
+              revealMove()
+            }
+            return 0
+          }
+          return prev - 1
+        })
+      }, 1000)
+    }
+
+    autoRevealTimer.current = setTimeout(startCountdown, Math.max(0, (timeLeft - 10) * 1000))
+
+    return () => {
+      if (autoRevealTimer.current) {
+        clearTimeout(autoRevealTimer.current)
+        autoRevealTimer.current = null
+      }
+      if (countdownTimer.current) {
+        clearInterval(countdownTimer.current)
+        countdownTimer.current = null
+      }
+    }
+  }, [revealDeadline, gameState, hasRevealed, isTransactionPending, revealMove])
 
   return {
     gameState,
@@ -320,6 +411,9 @@ export function useRockPaperScissors(sdk: SomniaGameSDK | null) {
     error,
     revealDeadline,
     playerMoves,
+    autoRevealCountdown,
+    isTransactionPending,
+    hasRevealed,
     actions: {
       createGame,
       joinGame,
