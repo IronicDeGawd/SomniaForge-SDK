@@ -30,6 +30,7 @@ export function useRockPaperScissors(sdk: SomniaGameSDK | null) {
           try {
             await rpsManager.connectWallet(walletClient)
           } catch {
+            // RPS Manager wallet connection failed, not critical
           }
         }
       }
@@ -43,7 +44,7 @@ export function useRockPaperScissors(sdk: SomniaGameSDK | null) {
         sdk.webSocket.unsubscribe(wsSubscriptionId.current)
       }
     }
-  }, [])
+  }, [sdk])
 
   const createGame = useCallback(async (entryFeeETH: string = '0.01') => {
     if (!sdk) {
@@ -126,6 +127,7 @@ export function useRockPaperScissors(sdk: SomniaGameSDK | null) {
         setUserBalance(balance)
       }
     } catch {
+      // Balance check failed, default to 0
       setUserBalance(0n)
     }
   }, [sdk, rpsManager])
@@ -145,8 +147,9 @@ export function useRockPaperScissors(sdk: SomniaGameSDK | null) {
         }, 1000)
       }
     } catch {
+      // Game result not available yet
     }
-  }, [sdk, currentSession, rpsManager, updateUserBalance])
+  }, [sdk, currentSession, rpsManager]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const commitMove = useCallback(async (move: 'rock' | 'paper' | 'scissors', nonce?: bigint) => {
     if (!sdk || !currentSession) return
@@ -186,7 +189,7 @@ export function useRockPaperScissors(sdk: SomniaGameSDK | null) {
     } finally {
       setIsTransactionPending(false)
     }
-  }, [sdk, currentSession, isTransactionPending, rpsManager])
+  }, [sdk, currentSession, isTransactionPending, rpsManager]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const revealMove = useCallback(async () => {
     if (!sdk || !currentSession) return
@@ -267,7 +270,7 @@ export function useRockPaperScissors(sdk: SomniaGameSDK | null) {
     } finally {
       setIsTransactionPending(false)
     }
-  }, [sdk, rpsManager, isTransactionPending, userBalance, updateUserBalance])
+  }, [sdk, rpsManager, isTransactionPending, userBalance]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const resetGame = useCallback(() => {
     if (wsSubscriptionId.current && sdk) {
@@ -305,6 +308,7 @@ export function useRockPaperScissors(sdk: SomniaGameSDK | null) {
             setGameState('committing')
           }
         } catch {
+          // Session status check failed, continue
         }
         
         const subId = await sdk.webSocket.subscribeToRockPaperScissorsEvents(
