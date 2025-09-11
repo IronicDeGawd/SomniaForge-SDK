@@ -36,6 +36,7 @@ export class RockPaperScissorsManager {
     )
   }
 
+
   async createRPSGame(entryFee: bigint = parseEther('0.01')): Promise<bigint> {
     if (!this.walletClient) {
       throw new Error('Wallet not connected')

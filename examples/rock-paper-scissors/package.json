@@ -10,7 +10,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@somniaforge/sdk": "file:../../sdk/somniaforge-sdk-1.1.0.tgz",
+    "@somniaforge/sdk": "file:../../sdk",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
     "viem": "^2.37.4"

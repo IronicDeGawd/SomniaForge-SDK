@@ -8,7 +8,6 @@ import {
 import { RPSMove } from './types/rockPaperScissors'
 import { detectAvailableWallets, switchToSomniaNetwork, addSomniaNetwork } from './utils/walletDetection'
 import { useRockPaperScissors } from './hooks/useRockPaperScissors'
-import { GameTimer } from './components/GameTimer'
 import { PlayerStatus } from './components/PlayerStatus'
 import { getActionText } from './utils/errorHandler'
 
@@ -478,18 +477,6 @@ function App() {
                 <div style={{ textAlign: 'center', padding: '40px' }}>
                   <h2 style={{ marginBottom: '20px' }}>Reveal Phase</h2>
                   
-                  {rpsGame.autoRevealCountdown > 0 && (
-                    <div style={{ 
-                      marginBottom: '30px',
-                      padding: '20px',
-                      backgroundColor: 'rgba(83, 109, 254, 0.1)',
-                      borderRadius: '8px',
-                      border: '1px solid rgba(83, 109, 254, 0.3)'
-                    }}>
-                      <h3 style={{ marginBottom: '10px', color: '#536DFE' }}>⏰ Auto-reveal in {rpsGame.autoRevealCountdown}s</h3>
-                      <p style={{ fontSize: '14px', opacity: 0.8 }}>Your move will be automatically revealed</p>
-                    </div>
-                  )}
                   
                   {selectedMove && (
                     <div style={{ marginBottom: '30px' }}>
@@ -497,25 +484,16 @@ function App() {
                     </div>
                   )}
                   
-                  {rpsGame.revealDeadline > 0 && (
-                    <div style={{ marginBottom: '30px' }}>
-                      <GameTimer 
-                        deadline={rpsGame.revealDeadline} 
-                        onExpired={handleForceResolve}
-                      />
-                    </div>
-                  )}
                   
                   <SomniaButton 
                     onClick={handleRevealMove}
-                    disabled={rpsGame.autoRevealCountdown > 0 || rpsGame.isTransactionPending || rpsGame.hasRevealed}
+                    disabled={rpsGame.isTransactionPending || rpsGame.hasRevealed}
                   >
                     {rpsGame.hasRevealed ? '✅ Move Revealed' : 
-                     rpsGame.isTransactionPending ? '⏳ Revealing...' :
-                     rpsGame.autoRevealCountdown > 0 ? '⏳ Auto-revealing...' : '🎭 Reveal Move'}
+                     rpsGame.isTransactionPending ? '⏳ Revealing...' : '🎭 Reveal Move'}
                   </SomniaButton>
                   
-                  {rpsGame.revealDeadline > 0 && Date.now() > rpsGame.revealDeadline && (
+                  {rpsGame.revealDeadline > 0 && Date.now() / 1000 > rpsGame.revealDeadline && (
                     <div style={{ marginTop: '20px' }}>
                       <SomniaButton 
                         onClick={handleForceResolve} 
@@ -530,7 +508,7 @@ function App() {
               </Card>
             )}
 
-            {rpsGame.gameState === 'finished' && rpsGame.gameResult && (
+            {rpsGame.gameState === 'finished' && rpsGame.gameResult && rpsGame.gameResult.players.length > 0 && (
               <Card>
                 <div style={{ textAlign: 'center', padding: '40px' }}>
                   <div style={{ fontSize: '4rem', marginBottom: '20px' }}>
@@ -553,19 +531,26 @@ function App() {
                         const currentPlayerIndex = players.findIndex(p => p.toLowerCase() === currentAccountLower)
                         const opponentIndex = currentPlayerIndex === 0 ? 1 : 0
                         
-                        const yourMove = currentPlayerIndex >= 0 ? moves[currentPlayerIndex] : null
-                        const opponentMove = moves[opponentIndex]
+                        // Get moves, checking for valid indices and non-zero moves
+                        const yourMove = (currentPlayerIndex !== -1 && moves[currentPlayerIndex] !== undefined) 
+                          ? moves[currentPlayerIndex] : RPSMove.None
+                        const opponentMove = (moves[opponentIndex] !== undefined) 
+                          ? moves[opponentIndex] : RPSMove.None
                         
                         return (
                           <>
                             <div>
                               <div style={{ fontSize: '0.9rem', color: SomniaColors.gray[600] }}>You</div>
-                              <div style={{ fontSize: '3rem' }}>{yourMove ? getMoveEmoji(yourMove) : '❓'}</div>
+                              <div style={{ fontSize: '3rem' }}>
+                                {yourMove !== RPSMove.None ? getMoveEmoji(yourMove) : '❓'}
+                              </div>
                             </div>
                             <div style={{ fontSize: '2rem', alignSelf: 'center' }}>VS</div>
                             <div>
                               <div style={{ fontSize: '0.9rem', color: SomniaColors.gray[600] }}>Opponent</div>
-                              <div style={{ fontSize: '3rem' }}>{getMoveEmoji(opponentMove)}</div>
+                              <div style={{ fontSize: '3rem' }}>
+                                {opponentMove !== RPSMove.None ? getMoveEmoji(opponentMove) : '❓'}
+                              </div>
                             </div>
                           </>
                         )

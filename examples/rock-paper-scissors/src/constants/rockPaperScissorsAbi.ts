@@ -771,6 +771,39 @@ export const ROCK_PAPER_SCISSORS_ABI = [
   {
     "inputs": [
       {
+        "internalType": "uint128",
+        "name": "sessionId",
+        "type": "uint128"
+      },
+      {
+        "internalType": "address",
+        "name": "player",
+        "type": "address"
+      },
+      {
+        "internalType": "enum RockPaperScissors.Move",
+        "name": "move",
+        "type": "uint8"
+      },
+      {
+        "internalType": "uint256",
+        "name": "nonce",
+        "type": "uint256"
+      },
+      {
+        "internalType": "bytes",
+        "name": "signature",
+        "type": "bytes"
+      }
+    ],
+    "name": "revealMoveForPlayer",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
         "internalType": "bytes32",
         "name": "role",
         "type": "bytes32"
@@ -1217,4 +1250,4 @@ export const ROCK_PAPER_SCISSORS_ABI = [
   }
 ] as const
 
-export const ROCK_PAPER_SCISSORS_CONTRACT_ADDRESS = '0x38e4C113767fC478B17b15Cee015ab8452f28F93' as const
+export const ROCK_PAPER_SCISSORS_CONTRACT_ADDRESS = '0x0F3Bf2aF1482B8f1cD494c5E9e8B9418eBfef37D' as const
