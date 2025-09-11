@@ -280,7 +280,7 @@ export class RockPaperScissorsManager {
     return await this.walletClient.writeContract({
       address: ROCK_PAPER_SCISSORS_CONTRACT_ADDRESS,
       abi: ROCK_PAPER_SCISSORS_ABI,
-      functionName: 'withdrawBalance',
+      functionName: 'withdraw',
       args: [],
       chain: somniaNetwork,
       account: this.walletClient.account!,

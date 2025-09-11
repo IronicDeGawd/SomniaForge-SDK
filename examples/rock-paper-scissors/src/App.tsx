@@ -509,15 +509,32 @@ function App() {
                   
                   <div style={{ marginBottom: '30px' }}>
                     <div style={{ display: 'flex', justifyContent: 'center', gap: '40px', marginBottom: '20px' }}>
-                      <div>
-                        <div style={{ fontSize: '0.9rem', color: SomniaColors.gray[600] }}>You</div>
-                        <div style={{ fontSize: '3rem' }}>{getMoveEmoji(rpsGame.gameResult.moves[0])}</div>
-                      </div>
-                      <div style={{ fontSize: '2rem', alignSelf: 'center' }}>VS</div>
-                      <div>
-                        <div style={{ fontSize: '0.9rem', color: SomniaColors.gray[600] }}>Opponent</div>
-                        <div style={{ fontSize: '3rem' }}>{getMoveEmoji(rpsGame.gameResult.moves[1])}</div>
-                      </div>
+                      {(() => {
+                        const currentAccountLower = account.toLowerCase()
+                        const players = rpsGame.gameResult.players
+                        const moves = rpsGame.gameResult.moves
+                        
+                        // Find current player's index
+                        const currentPlayerIndex = players.findIndex(p => p.toLowerCase() === currentAccountLower)
+                        const opponentIndex = currentPlayerIndex === 0 ? 1 : 0
+                        
+                        const yourMove = currentPlayerIndex >= 0 ? moves[currentPlayerIndex] : null
+                        const opponentMove = moves[opponentIndex]
+                        
+                        return (
+                          <>
+                            <div>
+                              <div style={{ fontSize: '0.9rem', color: SomniaColors.gray[600] }}>You</div>
+                              <div style={{ fontSize: '3rem' }}>{yourMove ? getMoveEmoji(yourMove) : '❓'}</div>
+                            </div>
+                            <div style={{ fontSize: '2rem', alignSelf: 'center' }}>VS</div>
+                            <div>
+                              <div style={{ fontSize: '0.9rem', color: SomniaColors.gray[600] }}>Opponent</div>
+                              <div style={{ fontSize: '3rem' }}>{getMoveEmoji(opponentMove)}</div>
+                            </div>
+                          </>
+                        )
+                      })()}
                     </div>
                     
                     <p style={{ color: SomniaColors.gray[600] }}>
