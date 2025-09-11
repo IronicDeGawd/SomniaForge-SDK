@@ -67,39 +67,3 @@ export class RevealAPI {
   }
 }
 
-// Usage in your React hook:
-/*
-const revealAPI = new RevealAPI()
-
-const revealMove = useCallback(async () => {
-  try {
-    setError(null)
-    
-    const storedMove = (window as any).gameMove
-    const storedNonce = (window as any).gameNonce
-    const playerAddress = sdk.wallet.getCurrentAccount()
-    
-    if (!storedMove || !storedNonce || !playerAddress) {
-      throw new Error('Move data not found')
-    }
-    
-    // Submit to backend for automatic reveal
-    const result = await revealAPI.submitForAutoReveal({
-      sessionId: currentSession!,
-      playerAddress,
-      move: storedMove,
-      nonce: storedNonce.toString()
-    })
-    
-    console.log('Reveal submitted:', result.transactionHash)
-    
-    // Check game result after a short delay
-    setTimeout(() => {
-      checkGameResult()
-    }, 3000)
-    
-  } catch (err) {
-    setError(parseGameError(err))
-  }
-}, [sdk, currentSession, checkGameResult])
-*/

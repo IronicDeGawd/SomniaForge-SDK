@@ -49,7 +49,6 @@ function App() {
   const [sessionToJoin, setSessionToJoin] = useState<string>('')
   const rpsGame = useRockPaperScissors(sdk)
 
-  // Update balance when wallet connects
   useEffect(() => {
     if (connectionState === 'connected' && account && rpsGame.actions.updateUserBalance) {
       rpsGame.actions.updateUserBalance()
@@ -222,7 +221,6 @@ function App() {
     const isDraw = rpsGame.gameResult.isDraw
     const hasBalance = rpsGame.userBalance > 0n
     
-    // Can withdraw if: (won the game OR it's a draw) AND has balance
     const isWinnerOrDraw = (winner === currentAccount) || isDraw
     return isWinnerOrDraw && hasBalance
   }
@@ -527,11 +525,9 @@ function App() {
                         const players = rpsGame.gameResult.players
                         const moves = rpsGame.gameResult.moves
                         
-                        // Find current player's index
                         const currentPlayerIndex = players.findIndex(p => p.toLowerCase() === currentAccountLower)
                         const opponentIndex = currentPlayerIndex === 0 ? 1 : 0
                         
-                        // Get moves, checking for valid indices and non-zero moves
                         const yourMove = (currentPlayerIndex !== -1 && moves[currentPlayerIndex] !== undefined) 
                           ? moves[currentPlayerIndex] : RPSMove.None
                         const opponentMove = (moves[opponentIndex] !== undefined) 

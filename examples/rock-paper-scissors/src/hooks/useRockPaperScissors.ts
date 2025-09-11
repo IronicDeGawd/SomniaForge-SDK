@@ -30,7 +30,6 @@ export function useRockPaperScissors(sdk: SomniaGameSDK | null) {
           try {
             await rpsManager.connectWallet(walletClient)
           } catch {
-            // Failed to connect RPS Manager to wallet
           }
         }
       }
@@ -38,7 +37,6 @@ export function useRockPaperScissors(sdk: SomniaGameSDK | null) {
     connectRPSManager()
   }, [sdk, rpsManager])
 
-  // Cleanup on unmount
   useEffect(() => {
     return () => {
       if (wsSubscriptionId.current && sdk) {
@@ -128,7 +126,6 @@ export function useRockPaperScissors(sdk: SomniaGameSDK | null) {
         setUserBalance(balance)
       }
     } catch {
-      // Balance check failed - not critical error
       setUserBalance(0n)
     }
   }, [sdk, rpsManager])
@@ -139,18 +136,15 @@ export function useRockPaperScissors(sdk: SomniaGameSDK | null) {
     try {
       const result = await rpsManager.getGameResult(BigInt(currentSession))
       
-      // Only consider the game finished if we have actual player data
       if (result && result.players.length > 0 && result.completedAt > 0n) {
         setGameResult(result)
         setGameState('finished')
         
-        // Update user balance when game finishes
         setTimeout(() => {
           updateUserBalance()
         }, 1000)
       }
     } catch {
-      // Game not finished yet or error getting result
     }
   }, [sdk, currentSession, rpsManager, updateUserBalance])
 
@@ -177,14 +171,12 @@ export function useRockPaperScissors(sdk: SomniaGameSDK | null) {
       
       await rpsManager.commitMove(BigInt(currentSession), moveHash)
       
-      // Store move data in window for later reveal
       ;(window as unknown as { gameNonce: bigint }).gameNonce = moveNonce
       ;(window as unknown as { gameMove: RPSMove }).gameMove = rpsMove
       
       
       setGameState('revealing')
       
-      // Update balance when entering reveal phase in case there are existing winnings
       setTimeout(() => {
         updateUserBalance()
       }, 1000)
@@ -257,7 +249,6 @@ export function useRockPaperScissors(sdk: SomniaGameSDK | null) {
       return
     }
     
-    // Check balance before attempting withdrawal
     if (userBalance === 0n) {
       setError(parseGameError('No balance available to withdraw'))
       return
@@ -268,7 +259,6 @@ export function useRockPaperScissors(sdk: SomniaGameSDK | null) {
       setError(null)
       await rpsManager.withdrawToWallet()
       
-      // Update balance after successful withdrawal
       setTimeout(() => {
         updateUserBalance()
       }, 2000)
@@ -280,7 +270,6 @@ export function useRockPaperScissors(sdk: SomniaGameSDK | null) {
   }, [sdk, rpsManager, isTransactionPending, userBalance, updateUserBalance])
 
   const resetGame = useCallback(() => {
-    // Unsubscribe from WebSocket events
     if (wsSubscriptionId.current && sdk) {
       sdk.webSocket.unsubscribe(wsSubscriptionId.current)
       wsSubscriptionId.current = null
@@ -301,25 +290,21 @@ export function useRockPaperScissors(sdk: SomniaGameSDK | null) {
     delete (window as unknown as { gameMove?: RPSMove }).gameMove
   }, [sdk])
 
-  // Effect to set up WebSocket event listeners
   useEffect(() => {
     if (!sdk || !currentSession || gameState === 'idle') return
 
-    // Prevent duplicate subscriptions
     if (wsSubscriptionId.current) {
       return
     }
 
     const setupEventListeners = async () => {
       try {
-        // Check session status first
         try {
           const isActive = await rpsManager.isSessionActive(BigInt(currentSession))
           if (isActive && gameState === 'waiting') {
             setGameState('committing')
           }
         } catch {
-          // Session status check failed - continue with subscription setup
         }
         
         const subId = await sdk.webSocket.subscribeToRockPaperScissorsEvents(
@@ -384,7 +369,6 @@ export function useRockPaperScissors(sdk: SomniaGameSDK | null) {
 
     setupEventListeners()
 
-    // Cleanup function
     return () => {
       if (wsSubscriptionId.current && sdk) {
         sdk.webSocket.unsubscribe(wsSubscriptionId.current)
