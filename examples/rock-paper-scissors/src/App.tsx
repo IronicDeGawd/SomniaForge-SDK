@@ -50,6 +50,13 @@ function App() {
   const [sessionToJoin, setSessionToJoin] = useState<string>('')
   const rpsGame = useRockPaperScissors(sdk)
 
+  // Update balance when wallet connects
+  useEffect(() => {
+    if (connectionState === 'connected' && account && rpsGame.actions.updateUserBalance) {
+      rpsGame.actions.updateUserBalance()
+    }
+  }, [connectionState, account, rpsGame.actions])
+
   useEffect(() => {
     const initSDK = async () => {
       try {
@@ -206,6 +213,34 @@ function App() {
     if (winner === currentAccount) return 'You win! 🎉'
     if (winner === '0x0000000000000000000000000000000000000000') return 'Game cancelled ⚠️'
     return 'You lose! 😢'
+  }
+
+  const isEligibleForWithdraw = (): boolean => {
+    if (!rpsGame.gameResult || !account) return false
+    
+    const currentAccount = account.toLowerCase()
+    const winner = rpsGame.gameResult.winner.toLowerCase()
+    const isDraw = rpsGame.gameResult.isDraw
+    const hasBalance = rpsGame.userBalance > 0n
+    
+    // Can withdraw if: (won the game OR it's a draw) AND has balance
+    const isWinnerOrDraw = (winner === currentAccount) || isDraw
+    return isWinnerOrDraw && hasBalance
+  }
+
+  const getWithdrawButtonText = (): string => {
+    if (!rpsGame.gameResult) return '💰 Withdraw'
+    
+    if (rpsGame.isTransactionPending) return '⏳ Withdrawing...'
+    
+    const isDraw = rpsGame.gameResult.isDraw
+    const balanceETH = Number(rpsGame.userBalance) / 1e18
+    
+    if (isDraw) {
+      return `💰 Withdraw Entry Fee (${balanceETH.toFixed(4)} STT)`
+    } else {
+      return `💰 Withdraw Winnings (${balanceETH.toFixed(4)} STT)`
+    }
   }
   const ErrorDisplay = () => {
     if (!error && !rpsGame.error) return null
@@ -542,18 +577,37 @@ function App() {
                     </p>
                   </div>
                   
-                  <div style={{ display: 'flex', gap: '20px', justifyContent: 'center' }}>
+                  <div style={{ display: 'flex', gap: '20px', justifyContent: 'center', flexWrap: 'wrap' }}>
                     <SomniaButton onClick={handleNewGame}>
                       🔄 Play Again
                     </SomniaButton>
-                    {(rpsGame.gameResult.winner.toLowerCase() === account.toLowerCase() || rpsGame.gameResult.isDraw) && (
+                    
+                    {isEligibleForWithdraw() && (
                       <SomniaButton 
                         onClick={rpsGame.actions.withdraw} 
                         disabled={rpsGame.isTransactionPending}
                         variant="primary"
                       >
-                        {rpsGame.isTransactionPending ? '⏳ Withdrawing...' : `💰 Withdraw ${rpsGame.gameResult.isDraw ? 'Entry Fee' : 'Winnings'}`}
+                        {getWithdrawButtonText()}
                       </SomniaButton>
+                    )}
+                    
+                    {/* Show helpful message if user expects to withdraw but can't */}
+                    {rpsGame.gameResult && !isEligibleForWithdraw() && (
+                      rpsGame.gameResult.winner.toLowerCase() === account.toLowerCase() || rpsGame.gameResult.isDraw
+                    ) && rpsGame.userBalance === 0n && (
+                      <div style={{
+                        padding: '12px',
+                        backgroundColor: 'rgba(255, 193, 7, 0.1)',
+                        border: '1px solid rgba(255, 193, 7, 0.3)',
+                        borderRadius: '8px',
+                        color: '#856404',
+                        fontSize: '14px',
+                        textAlign: 'center',
+                        maxWidth: '300px'
+                      }}>
+                        💡 No balance available to withdraw. Funds may have been withdrawn already.
+                      </div>
                     )}
                   </div>
                 </div>

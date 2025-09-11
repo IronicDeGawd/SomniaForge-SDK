@@ -18,6 +18,7 @@ export function useRockPaperScissors(sdk: SomniaGameSDK | null) {
   const [autoRevealCountdown, setAutoRevealCountdown] = useState<number>(0)
   const [isTransactionPending, setIsTransactionPending] = useState<boolean>(false)
   const [hasRevealed, setHasRevealed] = useState<boolean>(false)
+  const [userBalance, setUserBalance] = useState<bigint>(0n)
   
   const [rpsManager] = useState(() => new RockPaperScissorsManager())
   const autoRevealTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -119,11 +120,16 @@ export function useRockPaperScissors(sdk: SomniaGameSDK | null) {
       if (result) {
         setGameResult(result)
         setGameState('finished')
+        
+        // Update user balance when game finishes
+        setTimeout(() => {
+          updateUserBalance()
+        }, 1000)
       }
     } catch {
       // Game not finished yet or error getting result
     }
-  }, [sdk, currentSession, rpsManager])
+  }, [sdk, currentSession, rpsManager, updateUserBalance])
 
   const commitMove = useCallback(async (move: 'rock' | 'paper' | 'scissors', nonce?: bigint) => {
     if (!sdk || !currentSession) return
@@ -214,6 +220,21 @@ export function useRockPaperScissors(sdk: SomniaGameSDK | null) {
   }, [sdk, currentSession, checkGameResult, isTransactionPending, rpsManager])
 
 
+  const updateUserBalance = useCallback(async () => {
+    if (!sdk) return
+    
+    try {
+      const account = sdk.wallet.getCurrentAccount()
+      if (account) {
+        const balance = await rpsManager.getUserBalance(account)
+        setUserBalance(balance)
+      }
+    } catch {
+      // Balance check failed - not critical error
+      setUserBalance(0n)
+    }
+  }, [sdk, rpsManager])
+
   const withdraw = useCallback(async () => {
     if (!sdk) return
 
@@ -221,16 +242,27 @@ export function useRockPaperScissors(sdk: SomniaGameSDK | null) {
       return
     }
     
+    // Check balance before attempting withdrawal
+    if (userBalance === 0n) {
+      setError(parseGameError('No balance available to withdraw'))
+      return
+    }
+    
     try {
       setIsTransactionPending(true)
       setError(null)
       await rpsManager.withdrawToWallet()
+      
+      // Update balance after successful withdrawal
+      setTimeout(() => {
+        updateUserBalance()
+      }, 2000)
     } catch (err) {
       setError(parseGameError(err))
     } finally {
       setIsTransactionPending(false)
     }
-  }, [sdk, rpsManager, isTransactionPending])
+  }, [sdk, rpsManager, isTransactionPending, userBalance, updateUserBalance])
 
   const resetGame = useCallback(() => {
     // Clear timers
@@ -258,6 +290,7 @@ export function useRockPaperScissors(sdk: SomniaGameSDK | null) {
     setAutoRevealCountdown(0)
     setIsTransactionPending(false)
     setHasRevealed(false)
+    setUserBalance(0n)
     
     delete (window as unknown as { gameNonce?: bigint }).gameNonce
     delete (window as unknown as { gameMove?: RPSMove }).gameMove
@@ -414,6 +447,7 @@ export function useRockPaperScissors(sdk: SomniaGameSDK | null) {
     autoRevealCountdown,
     isTransactionPending,
     hasRevealed,
+    userBalance,
     actions: {
       createGame,
       joinGame,
@@ -423,6 +457,7 @@ export function useRockPaperScissors(sdk: SomniaGameSDK | null) {
       checkGameResult,
       withdraw,
       resetGame,
+      updateUserBalance,
     }
   }
 }
