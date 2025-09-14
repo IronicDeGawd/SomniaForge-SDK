@@ -35,6 +35,11 @@ export interface ReconnectOptions {
   backoffMultiplier: number
 }
 
+interface SubscriptionContext {
+  filter: WebSocketEventFilter
+  callback: WebSocketEventCallback
+}
+
 export class WebSocketManager {
   private wsClient: ReturnType<typeof createPublicClient> | null = null
   private wsUrl: string
@@ -44,6 +49,7 @@ export class WebSocketManager {
   private reconnectTimeout: NodeJS.Timeout | null = null
   private eventCallbacks: Map<string, WebSocketEventCallback> = new Map()
   private activeWatchers: Map<string, () => void> = new Map()
+  private subscriptionContexts: Map<string, SubscriptionContext> = new Map()
 
   constructor(
     wsUrl: string = SOMNIA_WS_URL,
@@ -104,6 +110,7 @@ export class WebSocketManager {
       }
     }
     this.activeWatchers.clear()
+    this.subscriptionContexts.clear()
 
     this.wsClient = null
     this.isConnected = false
@@ -132,6 +139,7 @@ export class WebSocketManager {
 
     const callbackId = `gamesession_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
     this.eventCallbacks.set(callbackId, callback)
+    this.subscriptionContexts.set(callbackId, { filter, callback })
 
     try {
       // Subscribe to contract events (use specified address or default to GameSession)
@@ -207,7 +215,26 @@ export class WebSocketManager {
   }
 
   /**
-   * Subscribe to RockPaperScissors contract events
+   * Subscribe to contract events (consolidated method)
+   */
+  async subscribeToContractEvents(
+    contractAddress: Address,
+    contractAbi: any[],
+    filter: WebSocketEventFilter = {},
+    callback: WebSocketEventCallback
+  ): Promise<string> {
+    return this.subscribeToGameSessionEvents(
+      { 
+        contractAddress, 
+        abi: contractAbi,
+        ...filter 
+      }, 
+      callback
+    )
+  }
+
+  /**
+   * Subscribe to RockPaperScissors contract events (legacy wrapper)
    */
   async subscribeToRockPaperScissorsEvents(
     contractAddress: Address,
@@ -215,54 +242,7 @@ export class WebSocketManager {
     filter: WebSocketEventFilter = {},
     callback: WebSocketEventCallback
   ): Promise<string> {
-    if (!this.isWebSocketConnected()) {
-      throw new Error('WebSocket not connected')
-    }
-
-    const callbackId = `rps_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
-    this.eventCallbacks.set(callbackId, callback)
-
-    try {
-      const unwatch = this.wsClient!.watchContractEvent({
-        address: contractAddress,
-        abi: contractAbi,
-        onLogs: (logs) => {
-          logs.forEach((log) => {
-            try {
-              const decoded = decodeEventLog({
-                abi: contractAbi,
-                data: log.data,
-                topics: log.topics,
-              })
-
-              // Apply filters
-              if (this.shouldProcessEvent(decoded as any, log, filter)) {
-                callback({
-                  eventName: (decoded as any).eventName,
-                  args: (decoded as any).args || {},
-                  transactionHash: log.transactionHash,
-                  blockNumber: log.blockNumber!,
-                  logIndex: log.logIndex!,
-                  removed: log.removed!,
-                })
-              }
-            } catch (error) {
-              console.warn('Error decoding RPS log:', error)
-            }
-          })
-        },
-        onError: (error) => {
-          console.error('WebSocket RPS event error:', error)
-          this.handleConnectionError()
-        },
-      })
-
-      this.activeWatchers.set(callbackId, unwatch)
-      return callbackId
-    } catch (error) {
-      this.eventCallbacks.delete(callbackId)
-      throw new Error(`Failed to subscribe to RPS events: ${error}`)
-    }
+    return this.subscribeToContractEvents(contractAddress, contractAbi, filter, callback)
   }
 
   /**
@@ -275,6 +255,7 @@ export class WebSocketManager {
         unwatch()
         this.activeWatchers.delete(subscriptionId)
         this.eventCallbacks.delete(subscriptionId)
+        this.subscriptionContexts.delete(subscriptionId)
         console.log(`Unsubscribed from ${subscriptionId}`)
       } catch (error) {
         console.warn(`Error unsubscribing from ${subscriptionId}:`, error)
@@ -406,25 +387,27 @@ export class WebSocketManager {
    * Resubscribe to all events after reconnection
    */
   private async resubscribeToEvents(): Promise<void> {
-    // Store current watchers
-    const currentWatchers = new Map(this.activeWatchers)
+    // Clear current watchers (they're invalid after reconnection)
     this.activeWatchers.clear()
 
-    // Resubscribe to all events
-    for (const [id, callback] of this.eventCallbacks) {
-      try {
-        if (id.startsWith('gamesession_')) {
-          await this.subscribeToGameSessionEvents({}, callback)
-        } else if (id.startsWith('rps_')) {
-          // For RPS subscriptions, we'd need to store more context
-          // For now, just log that we couldn't resubscribe
-          console.warn(`Cannot auto-resubscribe to RPS subscription ${id} - manual resubscription needed`)
+    // Resubscribe using stored contexts
+    const resubscribePromises: Promise<void>[] = []
+    
+    for (const [id, context] of this.subscriptionContexts) {
+      const resubscribePromise = (async () => {
+        try {
+          await this.subscribeToGameSessionEvents(context.filter, context.callback)
+          console.log(`Successfully resubscribed to ${id}`)
+        } catch (error) {
+          console.error(`Failed to resubscribe to ${id}:`, error)
         }
-        // Add other subscription types as needed
-      } catch (error) {
-        console.error(`Failed to resubscribe to ${id}:`, error)
-      }
+      })()
+      
+      resubscribePromises.push(resubscribePromise)
     }
+
+    // Wait for all resubscriptions to complete
+    await Promise.all(resubscribePromises)
   }
 
   /**
