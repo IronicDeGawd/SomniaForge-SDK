@@ -195,6 +195,7 @@ export function useRockPaperScissors(sdk: SomniaGameSDK | null) {
     if (!sdk || !currentSession) return
 
     if (hasRevealed || isTransactionPending) {
+      console.log('❌ Reveal blocked:', { hasRevealed, isTransactionPending })
       return
     }
     
@@ -211,13 +212,14 @@ export function useRockPaperScissors(sdk: SomniaGameSDK | null) {
       
       await rpsManager.revealMove(BigInt(currentSession), storedMove, storedNonce)
       setHasRevealed(true)
-      
+
       setTimeout(() => {
         checkGameResult()
       }, 2000)
-      
+
     } catch (err) {
       console.error('❌ Reveal transaction failed:', err);
+      setHasRevealed(false) // Reset reveal state on failure
       setError(parseGameError(err))
     } finally {
       setIsTransactionPending(false)
@@ -260,7 +262,7 @@ export function useRockPaperScissors(sdk: SomniaGameSDK | null) {
     try {
       setIsTransactionPending(true)
       setError(null)
-      await rpsManager.withdrawToWallet()
+      await rpsManager.withdraw()
       
       setTimeout(() => {
         updateUserBalance()
@@ -292,6 +294,15 @@ export function useRockPaperScissors(sdk: SomniaGameSDK | null) {
     delete (window as unknown as { gameNonce?: bigint }).gameNonce
     delete (window as unknown as { gameMove?: RPSMove }).gameMove
   }, [sdk])
+
+  const resetRevealState = useCallback(() => {
+    setHasRevealed(false)
+    console.log('🔄 Reveal state reset')
+    // Check for game results in case the game was resolved externally
+    setTimeout(() => {
+      checkGameResult()
+    }, 500)
+  }, [checkGameResult])
 
   useEffect(() => {
     if (!sdk || !currentSession || gameState === 'idle') return
@@ -401,6 +412,7 @@ export function useRockPaperScissors(sdk: SomniaGameSDK | null) {
       checkGameResult,
       withdraw,
       resetGame,
+      resetRevealState,
       updateUserBalance,
     }
   }

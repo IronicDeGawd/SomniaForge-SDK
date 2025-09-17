@@ -30,7 +30,7 @@ contract GameSession is ReentrancyGuard, AccessControl {
         bool isActive;
     }
     
-    uint128 private _sessionCounter;
+    uint128 internal _sessionCounter;
     
     mapping(uint128 => Session) public sessions;
     mapping(uint128 => mapping(address => Player)) public sessionPlayers;

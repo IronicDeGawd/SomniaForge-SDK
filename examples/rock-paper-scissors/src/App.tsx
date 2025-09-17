@@ -483,13 +483,25 @@ function App() {
                   )}
                   
                   
-                  <SomniaButton 
+                  <SomniaButton
                     onClick={handleRevealMove}
                     disabled={rpsGame.isTransactionPending || rpsGame.hasRevealed}
                   >
-                    {rpsGame.hasRevealed ? '✅ Move Revealed' : 
+                    {rpsGame.hasRevealed ? '✅ Move Revealed' :
                      rpsGame.isTransactionPending ? '⏳ Revealing...' : '🎭 Reveal Move'}
                   </SomniaButton>
+
+                  {rpsGame.hasRevealed && (
+                    <div style={{ marginTop: '10px' }}>
+                      <SomniaButton
+                        onClick={() => rpsGame.actions.resetRevealState()}
+                        variant="secondary"
+                        size="sm"
+                      >
+                        🔄 Reset Reveal State
+                      </SomniaButton>
+                    </div>
+                  )}
                   
                   {rpsGame.revealDeadline > 0 && Date.now() / 1000 > rpsGame.revealDeadline && (
                     <div style={{ marginTop: '20px' }}>
