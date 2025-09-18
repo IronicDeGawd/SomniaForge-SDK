@@ -8,6 +8,11 @@ import { parseGameError } from '../utils/errorHandler'
 import type { GameError } from '../utils/errorHandler'
 import { ROCK_PAPER_SCISSORS_ABI, ROCK_PAPER_SCISSORS_CONTRACT_ADDRESS } from '../constants/rockPaperScissorsAbi'
 
+/**
+ * Hook for managing Rock Paper Scissors game state and interactions
+ * @param sdk - The SomniaGameSDK instance for blockchain interactions
+ * @returns Game state and action methods
+ */
 export function useRockPaperScissors(sdk: SomniaGameSDK | null) {
   const [gameState, setGameState] = useState<GameState>('idle')
   const [currentSession, setCurrentSession] = useState<string | null>(null)
@@ -30,7 +35,7 @@ export function useRockPaperScissors(sdk: SomniaGameSDK | null) {
           try {
             await rpsManager.connectWallet(walletClient)
           } catch {
-            // RPS Manager wallet connection failed, not critical
+
           }
         }
       }
@@ -46,6 +51,10 @@ export function useRockPaperScissors(sdk: SomniaGameSDK | null) {
     }
   }, [sdk])
 
+  /**
+   * Create a new Rock Paper Scissors game session
+   * @param entryFeeETH - Entry fee in ETH (default: '0.01')
+   */
   const createGame = useCallback(async (entryFeeETH: string = '0.01') => {
     if (!sdk) {
       setError(parseGameError('SDK not available'))
@@ -83,6 +92,11 @@ export function useRockPaperScissors(sdk: SomniaGameSDK | null) {
     }
   }, [sdk, rpsManager, isTransactionPending])
 
+  /**
+   * Join an existing Rock Paper Scissors game session
+   * @param sessionId - The session ID to join
+   * @param entryFeeETH - Entry fee in ETH (default: '0.01')
+   */
   const joinGame = useCallback(async (sessionId: string, entryFeeETH: string = '0.01') => {
     if (!sdk) return
     
@@ -127,7 +141,6 @@ export function useRockPaperScissors(sdk: SomniaGameSDK | null) {
         setUserBalance(balance)
       }
     } catch {
-      // Balance check failed, default to 0
       setUserBalance(0n)
     }
   }, [sdk, rpsManager])
@@ -147,10 +160,15 @@ export function useRockPaperScissors(sdk: SomniaGameSDK | null) {
         }, 1000)
       }
     } catch {
-      // Game result not available yet
+
     }
   }, [sdk, currentSession, rpsManager]) // eslint-disable-line react-hooks/exhaustive-deps
 
+  /**
+   * Commit a move (rock, paper, or scissors) to the blockchain
+   * @param move - The move to commit
+   * @param nonce - Optional nonce for move hashing
+   */
   const commitMove = useCallback(async (move: 'rock' | 'paper' | 'scissors', nonce?: bigint) => {
     if (!sdk || !currentSession) return
 
@@ -176,8 +194,7 @@ export function useRockPaperScissors(sdk: SomniaGameSDK | null) {
       
       ;(window as unknown as { gameNonce: bigint }).gameNonce = moveNonce
       ;(window as unknown as { gameMove: RPSMove }).gameMove = rpsMove
-      
-      
+
       setGameState('revealing')
       
       setTimeout(() => {
@@ -191,11 +208,13 @@ export function useRockPaperScissors(sdk: SomniaGameSDK | null) {
     }
   }, [sdk, currentSession, isTransactionPending, rpsManager]) // eslint-disable-line react-hooks/exhaustive-deps
 
+  /**
+   * Reveal the previously committed move
+   */
   const revealMove = useCallback(async () => {
     if (!sdk || !currentSession) return
 
     if (hasRevealed || isTransactionPending) {
-      console.log('❌ Reveal blocked:', { hasRevealed, isTransactionPending })
       return
     }
     
@@ -218,14 +237,16 @@ export function useRockPaperScissors(sdk: SomniaGameSDK | null) {
       }, 2000)
 
     } catch (err) {
-      console.error('❌ Reveal transaction failed:', err);
-      setHasRevealed(false) // Reset reveal state on failure
+      setHasRevealed(false)
       setError(parseGameError(err))
     } finally {
       setIsTransactionPending(false)
     }
   }, [sdk, currentSession, checkGameResult, hasRevealed, isTransactionPending, rpsManager])
 
+  /**
+   * Force resolve a game after the reveal deadline has passed
+   */
   const forceResolveGame = useCallback(async () => {
     if (!sdk || !currentSession) return
 
@@ -247,6 +268,9 @@ export function useRockPaperScissors(sdk: SomniaGameSDK | null) {
     }
   }, [sdk, currentSession, checkGameResult, isTransactionPending, rpsManager])
 
+  /**
+   * Withdraw available balance from the contract
+   */
   const withdraw = useCallback(async () => {
     if (!sdk) return
 
@@ -274,12 +298,14 @@ export function useRockPaperScissors(sdk: SomniaGameSDK | null) {
     }
   }, [sdk, rpsManager, isTransactionPending, userBalance]) // eslint-disable-line react-hooks/exhaustive-deps
 
+  /**
+   * Reset the game state to idle and clean up resources
+   */
   const resetGame = useCallback(() => {
     if (wsSubscriptionId.current && sdk) {
       sdk.webSocket.unsubscribe(wsSubscriptionId.current)
       wsSubscriptionId.current = null
     }
-
 
     setGameState('idle')
     setCurrentSession(null)
@@ -290,15 +316,16 @@ export function useRockPaperScissors(sdk: SomniaGameSDK | null) {
     setIsTransactionPending(false)
     setHasRevealed(false)
     setUserBalance(0n)
-    
+
     delete (window as unknown as { gameNonce?: bigint }).gameNonce
     delete (window as unknown as { gameMove?: RPSMove }).gameMove
   }, [sdk])
 
+  /**
+   * Reset the reveal state and check for game results
+   */
   const resetRevealState = useCallback(() => {
     setHasRevealed(false)
-    console.log('🔄 Reveal state reset')
-    // Check for game results in case the game was resolved externally
     setTimeout(() => {
       checkGameResult()
     }, 500)
@@ -313,29 +340,23 @@ export function useRockPaperScissors(sdk: SomniaGameSDK | null) {
 
     const setupEventListeners = async () => {
       try {
-        try {
-          const isActive = await rpsManager.isSessionActive(BigInt(currentSession))
-          if (isActive && gameState === 'waiting') {
-            setGameState('committing')
-          }
-        } catch {
-          // Session status check failed, continue
-        }
-        
         const subId = await sdk.webSocket.subscribeToRockPaperScissorsEvents(
           ROCK_PAPER_SCISSORS_CONTRACT_ADDRESS,
           ROCK_PAPER_SCISSORS_ABI,
           { sessionId: BigInt(currentSession) },
-          (event) => {            
+          (event) => {
             switch (event.eventName) {
-              case 'PlayerJoined': {
-                const playerCount = event.args.playerCount as number
-                if (playerCount === 2) {
+              case 'PlayerJoined':
+                break
+
+              case 'ReadyToPlay': {
+                const players = event.args.players as string[]
+                if (players.length === 2) {
                   setGameState('committing')
                 }
                 break
               }
-              
+
               case 'SessionStarted':
                 setGameState('committing')
                 break
@@ -371,12 +392,54 @@ export function useRockPaperScissors(sdk: SomniaGameSDK | null) {
               case 'GameResultDetermined':
                 checkGameResult()
                 break
+
+              case 'AutoWithdrawal': {
+                const player = event.args.player as string
+                const amount = event.args.amount as bigint
+                const sessionId = event.args.sessionId as bigint
+
+                // Update user balance if this is for the current user
+                const account = sdk.wallet.getCurrentAccount()
+                if (account && player.toLowerCase() === account.toLowerCase()) {
+                  setTimeout(() => {
+                    updateUserBalance()
+                  }, 1000)
+                }
+                break
+              }
+
+              case 'WithdrawalFailed': {
+                const player = event.args.player as string
+                const amount = event.args.amount as bigint
+                const sessionId = event.args.sessionId as bigint
+
+                // Update user balance to reflect failed withdrawal
+                const account = sdk.wallet.getCurrentAccount()
+                if (account && player.toLowerCase() === account.toLowerCase()) {
+                  setTimeout(() => {
+                    updateUserBalance()
+                  }, 1000)
+                }
+                break
+              }
             }
           }
         )
         
         wsSubscriptionId.current = subId
-        
+
+        // Check if game is ready in case ReadyToPlay event was missed during subscription
+        setTimeout(async () => {
+          try {
+            const playerList = await rpsManager.getSessionPlayerList(BigInt(currentSession))
+            if (playerList.length >= 2 && gameState === 'waiting') {
+              setGameState('committing')
+            }
+          } catch {
+            // Silent fail - event listener will handle updates
+          }
+        }, 1000)
+
       } catch (err) {
         console.error('Failed to set up WebSocket listeners:', err)
       }
@@ -391,7 +454,6 @@ export function useRockPaperScissors(sdk: SomniaGameSDK | null) {
       }
     }
   }, [sdk, currentSession, gameState, checkGameResult, rpsManager])
-
 
   return {
     gameState,

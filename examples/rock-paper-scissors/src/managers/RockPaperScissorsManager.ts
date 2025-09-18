@@ -273,6 +273,21 @@ export class RockPaperScissorsManager {
     }
   }
 
+  async getSessionPlayerList(sessionId: bigint): Promise<Address[]> {
+    try {
+      const result = await this.publicClient.readContract({
+        address: ROCK_PAPER_SCISSORS_CONTRACT_ADDRESS,
+        abi: ROCK_PAPER_SCISSORS_ABI,
+        functionName: 'getSessionPlayers',
+        args: [sessionId],
+      }) as Address[]
+
+      return result
+    } catch (error) {
+      throw new Error(`Failed to get session player list: ${error}`)
+    }
+  }
+
   async withdraw(): Promise<Hash> {
     if (!this.walletClient) {
       throw new Error('Wallet not connected')
