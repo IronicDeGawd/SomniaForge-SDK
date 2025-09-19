@@ -85,7 +85,7 @@ const gameSession = await sdk.createGameSession();
             <div className="space-y-8">
               <div className="flex items-center gap-3 mb-6">
                 <img
-                  src="/src/assets/logo-transparent-noname.png"
+                  src="/logo-transparent-noname.png"
                   alt="SomniaForge"
                   className="h-12 w-12"
                 />

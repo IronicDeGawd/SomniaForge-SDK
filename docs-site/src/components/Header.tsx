@@ -9,7 +9,7 @@ const Header = () => {
       <div className="container mx-auto px-6 py-4 flex items-center justify-between">
         <div className="flex items-center space-x-3">
           <img
-            src="/src/assets/logo-transparent-noname.png"
+            src="/logo-transparent-noname.png"
             alt="SomniaForge"
             className="h-8 w-8"
           />
