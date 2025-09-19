@@ -10,6 +10,7 @@ import DocsLayout from "@/layouts/DocsLayout";
 import Landing from "./pages/Landing";
 import Documentation from "./pages/Documentation";
 import Demo from "./pages/Demo";
+import PitchDeck from "./pages/PitchDeck";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -28,6 +29,7 @@ const AppContent = () => {
         </Route>
         <Route path="/windowed-docs" element={<DocsLayout sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />} />
         <Route path="/demo" element={<Demo />} />
+        <Route path="/pitchdeck" element={<PitchDeck />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
     </div>
