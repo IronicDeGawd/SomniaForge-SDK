@@ -123,11 +123,6 @@ const PitchDeck = () => {
           event.preventDefault();
           zoomOut();
           break;
-        case 'r':
-        case 'R':
-          event.preventDefault();
-          rotate();
-          break;
         case 'Escape':
           if (isFullscreen) {
             event.preventDefault();
