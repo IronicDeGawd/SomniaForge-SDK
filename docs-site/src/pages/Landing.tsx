@@ -107,13 +107,15 @@ const gameSession = await sdk.createGameSession();
               </p>
 
               <div className="flex flex-col sm:flex-row gap-4">
-                <Button
-                  size="lg"
-                  className="btn-brand-primary"
-                >
-                  Start Building Now
-                  <ArrowRight className="ml-2 h-5 w-5" />
-                </Button>
+                <Link to="/docs">
+                  <Button
+                    size="lg"
+                    className="btn-brand-primary"
+                  >
+                    Start Building Now
+                    <ArrowRight className="ml-2 h-5 w-5" />
+                  </Button>
+                </Link>
 
                 <div className="flex gap-2">
                   <Link to="/docs">
@@ -178,12 +180,12 @@ const gameSession = await sdk.createGameSession();
                 <p className="text-foreground-secondary mb-4">
                   Experience real-time multiplayer gaming with WebSocket events
                 </p>
-                <Link to="/demo">
+                <a href="https://rockpaperscissors.somniaforge.com" target="_blank" rel="noopener noreferrer">
                   <Button variant="outline" className="w-full btn-outline-brand">
                     <ExternalLink className="mr-2 h-4 w-4" />
                     Try Demo
                   </Button>
-                </Link>
+                </a>
               </Card>
 
               {/* Network Status */}
@@ -359,12 +361,12 @@ const gameSession = await sdk.createGameSession();
               </Card>
 
               <Card className="professional-card p-6 text-center">
-                <Link to="/demo">
+                <a href="https://rockpaperscissors.somniaforge.com" target="_blank" rel="noopener noreferrer">
                   <Button variant="outline" size="lg" className="w-full mb-4 btn-outline-brand">
                     <ExternalLink className="mr-2 h-5 w-5" />
                     Try Live Demo
                   </Button>
-                </Link>
+                </a>
                 <div className="flex items-center justify-center gap-2 text-sm text-foreground-secondary">
                   <Globe className="h-4 w-4" />
                   Interactive Rock Paper Scissors
@@ -382,14 +384,18 @@ const gameSession = await sdk.createGameSession();
                 Connect with developers building real-time Somnia Network games
               </p>
               <div className="flex gap-2 justify-center">
-                <Button size="sm" variant="outline">
-                  <MessageCircle className="mr-1 h-4 w-4" />
-                  Discord
-                </Button>
-                <Button size="sm" variant="outline">
-                  <GitBranch className="mr-1 h-4 w-4" />
-                  GitHub
-                </Button>
+                <a href="#" target="_blank" rel="noopener noreferrer">
+                  <Button size="sm" variant="outline">
+                    <MessageCircle className="mr-1 h-4 w-4" />
+                    Discord
+                  </Button>
+                </a>
+                <a href="https://github.com/IronicDeGawd/SomniaForge-SDK" target="_blank" rel="noopener noreferrer">
+                  <Button size="sm" variant="outline">
+                    <GitBranch className="mr-1 h-4 w-4" />
+                    GitHub
+                  </Button>
+                </a>
               </div>
             </div>
           </Card>

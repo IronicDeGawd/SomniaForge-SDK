@@ -11,7 +11,7 @@
 
 *Zero-config setup • Sub-second transactions • Real-time WebSocket events*
 
-[📖 Documentation](#) • [🎮 Live Demo](#) • [🛠️ Examples](./examples)
+[📖 Documentation](https://somniaforge.com/docs) • [🎮 Live Demo](https://rockpaperscissors.somniaforge.com) • [🛠️ Examples](https://github.com/IronicDeGawd/SomniaForge-SDK/tree/main/apps)
 
 </div>
 
@@ -171,11 +171,11 @@ MIT License - see [LICENSE](./LICENSE) file for details.
 
 ## 🆘 Support & Community
 
-- **📖 Documentation**: [SomniaForge Docs](#)
-- **🎮 Live Demo**: [Interactive Demo](#)
+- **📖 Documentation**: [SomniaForge Docs](https://somniaforge.com/docs)
+- **🎮 Live Demo**: [Interactive Demo](https://rockpaperscissors.somniaforge.com)
 - **💬 Discord**: [Developer Community](#)
-- **📧 Email**: [Contact Email](#)
-- **🐛 GitHub Issues**: [Report Issues](#)
+- **📧 Email**: [Contact Email](mailto:developers@somniaforge.com)
+- **🐛 GitHub Issues**: [Report Issues](https://github.com/IronicDeGawd/SomniaForge-SDK/issues)
 - **🐦 Twitter**: [Follow Updates](#)
 
 ---
@@ -184,6 +184,6 @@ MIT License - see [LICENSE](./LICENSE) file for details.
 
 **Built with ❤️ for the Somnia Network gaming ecosystem**
 
-[🌟 Star us on GitHub](#) • [🍴 Fork the project](#) • [📖 Read the docs](#)
+[🌟 Star us on GitHub](https://github.com/IronicDeGawd/SomniaForge-SDK/stargazers) • [🍴 Fork the project](https://github.com/IronicDeGawd/SomniaForge-SDK/fork) • [📖 Read the docs](https://somniaforge.com/docs)
 
 </div>

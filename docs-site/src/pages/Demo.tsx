@@ -24,8 +24,8 @@ const Demo = () => {
       status: "live",
       tags: ["Multiplayer", "Real-time", "WebSocket"],
       features: ["Sub-second transactions", "Fair play mechanics", "Live event updates"],
-      githubUrl: "https://github.com/your-repo/rock-paper-scissors",
-      demoUrl: "#", // Will link to actual RPS demo
+      githubUrl: "https://github.com/IronicDeGawd/SomniaForge-SDK/tree/main/apps/rock-paper-scissors",
+      demoUrl: "https://rockpaperscissors.somniaforge.com",
       thumbnail: "/api/placeholder/400/240",
       tech: ["React", "Viem", "Somnia Network"],
       lastUpdated: "2 days ago"
@@ -165,14 +165,18 @@ const Demo = () => {
                   {/* Actions */}
                   {project.status === "live" ? (
                     <div className="flex gap-2">
-                      <Button className="btn-primary flex-1">
-                        <Play className="mr-2 h-4 w-4" />
-                        Play Demo
-                      </Button>
-                      {project.githubUrl && (
-                        <Button variant="outline" size="icon" className="btn-secondary">
-                          <ExternalLink className="h-4 w-4" />
+                      <a href={project.demoUrl} target="_blank" rel="noopener noreferrer" className="flex-1">
+                        <Button className="btn-primary w-full">
+                          <Play className="mr-2 h-4 w-4" />
+                          Play Demo
                         </Button>
+                      </a>
+                      {project.githubUrl && (
+                        <a href={project.githubUrl} target="_blank" rel="noopener noreferrer">
+                          <Button variant="outline" size="icon" className="btn-secondary">
+                            <ExternalLink className="h-4 w-4" />
+                          </Button>
+                        </a>
                       )}
                     </div>
                   ) : (
@@ -205,15 +209,19 @@ const Demo = () => {
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Button className="btn-primary">
-                <Code2 className="mr-2 h-5 w-5" />
-                Start Building
-                <ChevronRight className="ml-2 h-5 w-5" />
-              </Button>
-              <Button variant="outline" className="btn-secondary">
-                <ExternalLink className="mr-2 h-5 w-5" />
-                View Documentation
-              </Button>
+              <a href="/docs">
+                <Button className="btn-primary">
+                  <Code2 className="mr-2 h-5 w-5" />
+                  Start Building
+                  <ChevronRight className="ml-2 h-5 w-5" />
+                </Button>
+              </a>
+              <a href="/docs">
+                <Button variant="outline" className="btn-secondary">
+                  <ExternalLink className="mr-2 h-5 w-5" />
+                  View Documentation
+                </Button>
+              </a>
             </div>
 
             <div className="mt-8 pt-8 border-t border-border">

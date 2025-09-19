@@ -42,6 +42,14 @@
     "email": "developers@somniaforge.dev"
   },
   "license": "MIT",
+  "homepage": "https://somniaforge.com",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/IronicDeGawd/SomniaForge-SDK.git"
+  },
+  "bugs": {
+    "url": "https://github.com/IronicDeGawd/SomniaForge-SDK/issues"
+  },
   "engines": {
     "node": ">=18.0.0",
     "npm": ">=8.0.0"

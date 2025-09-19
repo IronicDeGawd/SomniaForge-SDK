@@ -11,7 +11,7 @@
 
 *Sub-second transactions • Real-time WebSocket events • Complete gaming ecosystem*
 
-[📖 Documentation](#) • [🎮 Live Demo](#) • [📦 NPM Package](https://www.npmjs.com/package/@somniaforge/sdk)
+[📖 Documentation](https://somniaforge.com/docs) • [🎮 Live Demo](https://rockpaperscissors.somniaforge.com) • [📦 NPM Package](https://www.npmjs.com/package/@somniaforge/sdk)
 
 </div>
 
@@ -147,7 +147,7 @@ Pre-configured for Somnia Network testnet:
 
 1. **Clone the repository**
    ```bash
-   git clone [repository-url]
+   git clone https://github.com/IronicDeGawd/SomniaForge-SDK.git
    cd SomniaDefi
    ```
 
@@ -278,11 +278,11 @@ MIT License - see [LICENSE](./packages/LICENSE) file for details.
 
 ## 🆘 Support & Community
 
-- **📖 Documentation**: [SomniaForge Docs](#)
-- **🎮 Live Demo**: [Interactive Demo](#)
+- **📖 Documentation**: [SomniaForge Docs](https://somniaforge.com/docs)
+- **🎮 Live Demo**: [Interactive Demo](https://rockpaperscissors.somniaforge.com)
 - **💬 Discord**: [Developer Community](#)
-- **📧 Email**: developers@somniaforge.dev
-- **🐛 GitHub Issues**: [Report Issues](#)
+- **📧 Email**: developers@somniaforge.com
+- **🐛 GitHub Issues**: [Report Issues](https://github.com/IronicDeGawd/SomniaForge-SDK/issues)
 - **🐦 Twitter**: [Follow Updates](#)
 
 ---
@@ -290,7 +290,7 @@ MIT License - see [LICENSE](./packages/LICENSE) file for details.
 ## 🔗 Quick Links
 
 - **NPM Package**: [@somniaforge/sdk](https://www.npmjs.com/package/@somniaforge/sdk)
-- **Somnia Network**: [Official Website](https://somnia.network)
+- **Somnia Network**: [Official Website](https://testnet.somnia.network)
 - **Somnia Docs**: [Developer Documentation](https://docs.somnia.network)
 - **Viem Documentation**: [Modern Ethereum Client](https://viem.sh)
 
@@ -300,7 +300,7 @@ MIT License - see [LICENSE](./packages/LICENSE) file for details.
 
 **Built with ❤️ for the Somnia Network gaming ecosystem**
 
-[🌟 Star us on GitHub](#) • [🍴 Fork the project](#) • [📖 Read the docs](#)
+[🌟 Star us on GitHub](https://github.com/IronicDeGawd/SomniaForge-SDK/stargazers) • [🍴 Fork the project](https://github.com/IronicDeGawd/SomniaForge-SDK/fork) • [📖 Read the docs](https://somniaforge.com/docs)
 
 *Empowering developers to build the next generation of real-time, fully on-chain games*
 
