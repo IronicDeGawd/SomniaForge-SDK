@@ -13,7 +13,7 @@ const PitchDeck = () => {
   const isMobile = useIsMobile();
   const [numPages, setNumPages] = useState<number>(0);
   const [pageNumber, setPageNumber] = useState<number>(1);
-  const [scale, setScale] = useState<number>(isMobile ? 1.1 : 0.9);
+  const [scale, setScale] = useState<number>(isMobile ? 1.1 : 0.8);
   const [rotation, setRotation] = useState<number>(0);
   const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(true);
