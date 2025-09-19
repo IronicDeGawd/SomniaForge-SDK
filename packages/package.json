@@ -1,7 +1,7 @@
 {
   "name": "@somniaforge/sdk",
-  "version": "1.1.0",
-  "description": "SomniaForge SDK - TypeScript toolkit for building games on Somnia Network",
+  "version": "1.2.0-beta.1",
+  "description": "SomniaForge SDK - Zero-config TypeScript toolkit for building real-time games on Somnia Network",
   "type": "module",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
@@ -18,19 +18,38 @@
     "build": "vite build && tsc --emitDeclarationOnly --declaration --outDir dist",
     "test": "vitest",
     "test:coverage": "vitest --coverage",
-    "type-check": "tsc --noEmit"
+    "type-check": "tsc --noEmit",
+    "prepublishOnly": "npm run type-check && npm run build && npm test",
+    "prepack": "npm run build"
   },
   "keywords": [
-    "blockchain",
-    "gaming",
-    "somnia",
-    "somniaforge",
-    "web3",
-    "sdk",
-    "typescript"
+    "somnia-network",
+    "gaming-sdk",
+    "real-time-games",
+    "multiplayer-games",
+    "web3-gaming",
+    "blockchain-games",
+    "typescript-sdk",
+    "viem",
+    "websocket-events",
+    "game-development",
+    "react-components",
+    "zero-config",
+    "sub-second-transactions"
   ],
-  "author": "SomniaForge",
+  "author": {
+    "name": "SomniaForge Team",
+    "email": "developers@somniaforge.dev"
+  },
   "license": "MIT",
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=8.0.0"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
   "dependencies": {
     "viem": "^2.21.0",
     "ws": "^8.18.0"
@@ -51,13 +70,17 @@
   "peerDependencies": {
     "react": "^18.0.0 || ^19.0.0",
     "react-dom": "^18.0.0 || ^19.0.0",
-    "typescript": "^5.0.0"
+    "typescript": "^5.0.0",
+    "viem": "^2.21.0"
   },
   "peerDependenciesMeta": {
     "react": {
       "optional": false
     },
     "react-dom": {
+      "optional": false
+    },
+    "viem": {
       "optional": false
     }
   },

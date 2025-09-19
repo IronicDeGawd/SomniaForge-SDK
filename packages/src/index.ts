@@ -30,7 +30,6 @@ export class SomniaGameSDK {
       ...config,
     }
 
-    // Initialize managers
     this.gameSession = new GameSessionManager(this.config.rpcUrl, this.config.wsUrl)
     this.playerRegistry = new PlayerRegistryManager(this.config.rpcUrl, this.config.wsUrl)
     this.wallet = new WalletConnector({
@@ -51,17 +50,14 @@ export class SomniaGameSDK {
     isConnected: boolean
   }> {
     try {
-      // Connect wallet using the provided provider
       const walletConnection = await this.wallet.connectWithProvider(provider, account, chainId)
-      
-      // Get wallet client and connect to managers
+
       const walletClient = this.wallet.getWalletClient()
       if (walletClient) {
         await this.gameSession.connectWallet(walletClient)
         await this.playerRegistry.connectWallet(walletClient)
       }
 
-      // Connect WebSocket
       await this.webSocket.connect()
 
       return {
@@ -83,17 +79,14 @@ export class SomniaGameSDK {
     isConnected: boolean
   }> {
     try {
-      // Connect wallet
       const walletConnection = await this.wallet.connect()
-      
-      // Get wallet client and connect to managers
+
       const walletClient = this.wallet.getWalletClient()
       if (walletClient) {
         await this.gameSession.connectWallet(walletClient)
         await this.playerRegistry.connectWallet(walletClient)
       }
 
-      // Connect WebSocket
       await this.webSocket.connect()
 
       return {
@@ -186,7 +179,6 @@ export class SomniaGameSDK {
    */
   private handleAccountChanged(account: `0x${string}` | null): void {
     if (account) {
-      // Reconnect managers with new account
       const walletClient = this.wallet.getWalletClient()
       if (walletClient) {
         this.gameSession.connectWallet(walletClient)
@@ -199,19 +191,17 @@ export class SomniaGameSDK {
    * Handle chain changed
    */
   private handleChainChanged(chainId: number): void {
-    // Auto-switch back to Somnia if enabled
-    console.log(`Chain changed to ${chainId}`)
+
   }
 
   /**
    * Handle wallet disconnect
    */
   private handleDisconnect(): void {
-    console.log('Wallet disconnected')
+
   }
 }
 
-// Export all types and constants for external use
 export * from './types'
 export * from './constants/network'
 export * from './constants/contracts'
@@ -220,9 +210,7 @@ export * from './managers/PlayerRegistryManager'
 export * from './managers/WalletConnector'
 export * from './managers/WebSocketManager'
 
-
-// Export UI Components (optional for React applications) - selectively to avoid conflicts
-export { 
+export {
   WalletConnectButton,
   GameCard,
   PlayerProfile,
@@ -233,9 +221,5 @@ export {
   css
 } from './components'
 
-
-// Export default instance for quick usage
 export const somniaSDK = new SomniaGameSDK()
-
-// Export network and contract info
 export { somniaNetwork, CONTRACT_ADDRESSES }

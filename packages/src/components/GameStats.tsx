@@ -38,7 +38,7 @@ export const GameStats: React.FC<GameStatsProps> = ({
 }) => {
   const getContainerStyles = () => {
     const baseStyles = {
-      fontFamily: 'inherit',
+      fontFamily: SomniaTheme.fonts.inter,
     }
 
     const variantStyles = {
@@ -53,11 +53,11 @@ export const GameStats: React.FC<GameStatsProps> = ({
         flexWrap: 'wrap' as const,
       },
       card: {
-        background: SomniaColors.white,
-        borderRadius: SomniaTheme.borderRadius.xl,
+        background: SomniaColors.surface,
+        borderRadius: SomniaTheme.borderRadius.lg,
         padding: SomniaTheme.spacing.lg,
         boxShadow: SomniaTheme.shadow.md,
-        border: `1px solid ${SomniaColors.gray[200]}`,
+        border: `1px solid ${SomniaColors.border}`,
       },
     }
 
@@ -69,15 +69,15 @@ export const GameStats: React.FC<GameStatsProps> = ({
 
   const getStatCardStyles = (isHighlight: boolean = false) => {
     return {
-      background: isHighlight 
-        ? `linear-gradient(135deg, ${SomniaColors.white} 0%, #F8F4FF 100%)`
-        : SomniaColors.white,
+      background: isHighlight
+        ? `linear-gradient(135deg, ${SomniaColors.surface} 0%, ${SomniaColors.backgroundSecondary} 100%)`
+        : SomniaColors.surface,
       borderRadius: SomniaTheme.borderRadius.lg,
       padding: variant === 'compact' ? SomniaTheme.spacing.md : SomniaTheme.spacing.lg,
       boxShadow: SomniaTheme.shadow.sm,
-      border: isHighlight 
-        ? `2px solid ${SomniaColors.somniaViolet}` 
-        : `1px solid ${SomniaColors.gray[200]}`,
+      border: isHighlight
+        ? `2px solid ${SomniaColors.brandPrimary}`
+        : `1px solid ${SomniaColors.border}`,
       transition: 'all 0.2s ease-in-out',
       position: 'relative' as const,
       overflow: 'hidden' as const,
@@ -93,7 +93,7 @@ export const GameStats: React.FC<GameStatsProps> = ({
           left: 0,
           right: 0,
           height: '3px',
-          background: SomniaColors.primaryGradientHorizontal,
+          background: SomniaColors.primaryGradient,
         },
       }),
     }
@@ -119,7 +119,7 @@ export const GameStats: React.FC<GameStatsProps> = ({
       value: totalPlayers.toLocaleString(),
       icon: <PlayersIcon />,
       highlight: false,
-      color: SomniaColors.somniaViolet,
+      color: SomniaColors.brandPrimary,
     },
     {
       label: 'Prize Pool',
@@ -133,7 +133,7 @@ export const GameStats: React.FC<GameStatsProps> = ({
       value: averageGameTime,
       icon: <TimeIcon />,
       highlight: false,
-      color: SomniaColors.gray[600],
+      color: SomniaColors.foregroundSecondary,
     },
   ]
 
@@ -162,7 +162,7 @@ export const GameStats: React.FC<GameStatsProps> = ({
         {variant !== 'compact' && (
           <div style={{
             fontSize: SomniaTheme.fontSize.sm,
-            color: SomniaColors.gray[600],
+            color: SomniaColors.foregroundSecondary,
             fontWeight: SomniaTheme.fontWeight.medium,
             textTransform: 'uppercase' as const,
             letterSpacing: '0.05em',
@@ -176,7 +176,7 @@ export const GameStats: React.FC<GameStatsProps> = ({
       <div style={{
         fontSize: variant === 'compact' ? SomniaTheme.fontSize.lg : SomniaTheme.fontSize['2xl'],
         fontWeight: SomniaTheme.fontWeight.bold,
-        color: SomniaColors.gray[900],
+        color: SomniaColors.foreground,
         marginBottom: variant === 'compact' ? SomniaTheme.spacing.xs : SomniaTheme.spacing.sm,
         lineHeight: '1.2',
       }}>
@@ -187,7 +187,7 @@ export const GameStats: React.FC<GameStatsProps> = ({
       {variant === 'compact' && (
         <div style={{
           fontSize: SomniaTheme.fontSize.sm,
-          color: SomniaColors.gray[600],
+          color: SomniaColors.foregroundSecondary,
           fontWeight: SomniaTheme.fontWeight.medium,
         }}>
           {stat.label}

@@ -61,16 +61,17 @@ export const GameCard: React.FC<GameCardProps> = ({
 }) => {
   const getCardStyles = () => {
     const baseStyles = {
-      background: SomniaColors.white,
-      borderRadius: SomniaTheme.borderRadius.xl,
+      background: SomniaColors.surface,
+      borderRadius: SomniaTheme.borderRadius.lg,
       padding: SomniaTheme.spacing.lg,
       boxShadow: SomniaTheme.shadow.md,
       border: '1px solid',
-      borderColor: SomniaColors.gray[200],
+      borderColor: SomniaColors.border,
       transition: 'all 0.2s ease-in-out',
       cursor: 'pointer',
       position: 'relative' as const,
       overflow: 'hidden' as const,
+      fontFamily: SomniaTheme.fonts.inter,
     }
 
     const variantStyles = {
@@ -78,12 +79,13 @@ export const GameCard: React.FC<GameCardProps> = ({
         '&:hover': {
           transform: 'translateY(-2px)',
           boxShadow: SomniaTheme.shadow.lg,
-          borderColor: SomniaColors.somniaViolet,
+          borderColor: SomniaColors.brandPrimary,
         },
       },
       featured: {
-        background: `linear-gradient(135deg, ${SomniaColors.white} 0%, #F8F4FF 100%)`,
-        border: `2px solid ${SomniaColors.somniaViolet}`,
+        background: `linear-gradient(135deg, ${SomniaColors.surface} 0%, ${SomniaColors.backgroundSecondary} 100%)`,
+        border: `2px solid ${SomniaColors.brandPrimary}`,
+        boxShadow: SomniaTheme.shadow.soft,
         '&::before': {
           content: '""',
           position: 'absolute',
@@ -91,7 +93,7 @@ export const GameCard: React.FC<GameCardProps> = ({
           left: 0,
           right: 0,
           height: '4px',
-          background: SomniaColors.primaryGradientHorizontal,
+          background: SomniaColors.primaryGradient,
         },
       },
       compact: {
@@ -117,10 +119,10 @@ export const GameCard: React.FC<GameCardProps> = ({
         color: SomniaColors.success,
         border: `1px solid ${SomniaColors.success}40`,
       },
-      completed: {
-        background: `${SomniaColors.gray[500]}20`,
-        color: SomniaColors.gray[600],
-        border: `1px solid ${SomniaColors.gray[400]}40`,
+      finished: {
+        background: `${SomniaColors.foregroundTertiary}20`,
+        color: SomniaColors.foregroundTertiary,
+        border: `1px solid ${SomniaColors.foregroundTertiary}40`,
       },
     }
 
@@ -131,6 +133,7 @@ export const GameCard: React.FC<GameCardProps> = ({
       fontWeight: SomniaTheme.fontWeight.medium,
       textTransform: 'uppercase' as const,
       letterSpacing: '0.05em',
+      fontFamily: SomniaTheme.fonts.inter,
       ...statusColors[status as keyof typeof statusColors],
     }
   }
@@ -141,17 +144,24 @@ export const GameCard: React.FC<GameCardProps> = ({
       borderRadius: SomniaTheme.borderRadius.md,
       border: 'none',
       fontSize: SomniaTheme.fontSize.sm,
-      fontWeight: SomniaTheme.fontWeight.semibold,
+      fontWeight: SomniaTheme.fontWeight.medium,
+      fontFamily: SomniaTheme.fonts.inter,
       cursor: 'pointer',
       transition: 'all 0.2s ease-in-out',
       background: isPrimary ? SomniaColors.primaryGradient : 'transparent',
-      color: isPrimary ? SomniaColors.white : SomniaColors.somniaViolet,
-      ...(isPrimary ? {} : { border: `1px solid ${SomniaColors.gray[300]}` }),
+      color: isPrimary ? SomniaColors.white : SomniaColors.brandPrimary,
+      ...(isPrimary ? {} : { border: `1px solid ${SomniaColors.border}` }),
       '&:hover': {
         transform: 'translateY(-1px)',
-        ...(isPrimary 
-          ? { background: SomniaColors.hover }
-          : { background: SomniaColors.gray[50], borderColor: SomniaColors.somniaViolet }
+        ...(isPrimary
+          ? {
+              background: `linear-gradient(135deg, ${SomniaColors.brandPrimary}E6 0%, ${SomniaColors.brandSecondary}E6 100%)`,
+              boxShadow: SomniaTheme.shadow.soft,
+            }
+          : {
+              background: SomniaColors.backgroundHover,
+              borderColor: SomniaColors.brandPrimary,
+            }
         ),
       },
     }
@@ -187,8 +197,8 @@ export const GameCard: React.FC<GameCardProps> = ({
         {gameId && (
           <div style={{
             fontSize: SomniaTheme.fontSize.xs,
-            color: SomniaColors.gray[500],
-            fontFamily: 'monospace',
+            color: SomniaColors.foregroundTertiary,
+            fontFamily: SomniaTheme.fonts.mono,
           }}>
             #{gameId}
           </div>
@@ -199,9 +209,11 @@ export const GameCard: React.FC<GameCardProps> = ({
       <div style={{ marginBottom: SomniaTheme.spacing.md }}>
         <h3 style={{
           margin: 0,
-          fontSize: variant === 'compact' ? SomniaTheme.fontSize.md : SomniaTheme.fontSize.lg,
-          fontWeight: SomniaTheme.fontWeight.bold,
-          color: SomniaColors.gray[900],
+          fontSize: variant === 'compact' ? SomniaTheme.fontSize.base : SomniaTheme.fontSize.lg,
+          fontWeight: SomniaTheme.fontWeight.semibold,
+          fontFamily: SomniaTheme.fonts.geist,
+          color: SomniaColors.foreground,
+          lineHeight: SomniaTheme.lineHeight.tight,
           marginBottom: description ? SomniaTheme.spacing.xs : 0,
         }}>
           {title}
@@ -210,8 +222,9 @@ export const GameCard: React.FC<GameCardProps> = ({
           <p style={{
             margin: 0,
             fontSize: SomniaTheme.fontSize.sm,
-            color: SomniaColors.gray[600],
-            lineHeight: '1.4',
+            fontFamily: SomniaTheme.fonts.inter,
+            color: SomniaColors.foregroundSecondary,
+            lineHeight: SomniaTheme.lineHeight.normal,
           }}>
             {description}
           </p>
@@ -228,16 +241,18 @@ export const GameCard: React.FC<GameCardProps> = ({
         }}>
           <span style={{
             fontSize: SomniaTheme.fontSize.sm,
-            color: SomniaColors.gray[600],
+            color: SomniaColors.foregroundTertiary,
+            fontFamily: SomniaTheme.fonts.inter,
           }}>
             Players
           </span>
           <span style={{
             fontSize: SomniaTheme.fontSize.sm,
             fontWeight: SomniaTheme.fontWeight.semibold,
-            color: SomniaColors.gray[900],
+            color: SomniaColors.foreground,
+            fontFamily: SomniaTheme.fonts.inter,
           }}>
-            Players: {playerCount || 0}/{maxPlayers || 0}
+            {playerCount || 0}/{maxPlayers || 0}
           </span>
         </div>
         
@@ -245,14 +260,14 @@ export const GameCard: React.FC<GameCardProps> = ({
         <div style={{
           width: '100%',
           height: '6px',
-          background: SomniaColors.gray[200],
+          background: SomniaColors.backgroundTertiary,
           borderRadius: SomniaTheme.borderRadius.full,
           overflow: 'hidden',
         }}>
           <div style={{
             width: `${getProgressPercentage()}%`,
             height: '100%',
-            background: SomniaColors.primaryGradientHorizontal,
+            background: SomniaColors.primaryGradient,
             transition: 'width 0.3s ease-in-out',
           }} />
         </div>
@@ -269,7 +284,7 @@ export const GameCard: React.FC<GameCardProps> = ({
             <div>
               <div style={{
                 fontSize: SomniaTheme.fontSize.xs,
-                color: SomniaColors.gray[500],
+                color: SomniaColors.foregroundTertiary,
                 textTransform: 'uppercase',
                 letterSpacing: '0.05em',
               }}>
@@ -288,7 +303,7 @@ export const GameCard: React.FC<GameCardProps> = ({
             <div style={{ textAlign: 'right' }}>
               <div style={{
                 fontSize: SomniaTheme.fontSize.xs,
-                color: SomniaColors.gray[500],
+                color: SomniaColors.foregroundTertiary,
                 textTransform: 'uppercase',
                 letterSpacing: '0.05em',
               }}>
@@ -297,7 +312,7 @@ export const GameCard: React.FC<GameCardProps> = ({
               <div style={{
                 fontSize: SomniaTheme.fontSize.sm,
                 fontWeight: SomniaTheme.fontWeight.semibold,
-                color: SomniaColors.somniaViolet,
+                color: SomniaColors.brandPrimary,
               }}>
                 {timeRemaining ? formatTimeRemaining(timeRemaining) : 'No time limit'}
               </div>

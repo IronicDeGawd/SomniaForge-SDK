@@ -76,31 +76,31 @@ export const PlayerProfile: React.FC<PlayerProfileProps> = ({
 }) => {
   const getContainerStyles = () => {
     const baseStyles = {
-      fontFamily: 'inherit',
+      fontFamily: SomniaTheme.fonts.inter,
     }
 
     const variantStyles = {
       card: {
-        background: SomniaColors.white,
-        borderRadius: SomniaTheme.borderRadius.xl,
+        background: SomniaColors.surface,
+        borderRadius: SomniaTheme.borderRadius.lg,
         padding: SomniaTheme.spacing.lg,
         boxShadow: SomniaTheme.shadow.md,
-        border: `1px solid ${SomniaColors.gray[200]}`,
+        border: `1px solid ${SomniaColors.border}`,
       },
       inline: {
         display: 'flex',
         alignItems: 'center',
         gap: SomniaTheme.spacing.md,
         padding: SomniaTheme.spacing.md,
-        background: SomniaColors.gray[50],
+        background: SomniaColors.backgroundSecondary,
         borderRadius: SomniaTheme.borderRadius.lg,
       },
       detailed: {
-        background: SomniaColors.white,
-        borderRadius: SomniaTheme.borderRadius.xl,
-        padding: SomniaTheme.spacing.xl,
+        background: SomniaColors.surface,
+        borderRadius: SomniaTheme.borderRadius.lg,
+        padding: SomniaTheme.spacing['2xl'],
         boxShadow: SomniaTheme.shadow.lg,
-        border: `1px solid ${SomniaColors.gray[200]}`,
+        border: `1px solid ${SomniaColors.border}`,
       },
     }
 
@@ -124,7 +124,7 @@ export const PlayerProfile: React.FC<PlayerProfileProps> = ({
     if (level >= 20) return SomniaColors.primaryGradient
     if (level >= 10) return SomniaColors.info
     if (level >= 5) return SomniaColors.success
-    return SomniaColors.gray[600]
+    return SomniaColors.foregroundSecondary
   }
 
   const renderAvatar = () => (
@@ -166,9 +166,9 @@ export const PlayerProfile: React.FC<PlayerProfileProps> = ({
         }}>
           <h3 style={{
             margin: 0,
-            fontSize: variant === 'inline' ? SomniaTheme.fontSize.md : SomniaTheme.fontSize.xl,
+            fontSize: variant === 'inline' ? SomniaTheme.fontSize.base : SomniaTheme.fontSize.xl,
             fontWeight: SomniaTheme.fontWeight.bold,
-            color: SomniaColors.gray[900],
+            color: SomniaColors.foreground,
           }}>
             {playerName}
           </h3>
@@ -188,8 +188,8 @@ export const PlayerProfile: React.FC<PlayerProfileProps> = ({
         
         <div style={{
           fontSize: SomniaTheme.fontSize.sm,
-          color: SomniaColors.gray[600],
-          fontFamily: 'monospace',
+          color: SomniaColors.foregroundSecondary,
+          fontFamily: SomniaTheme.fonts.mono,
         }}>
           {formatAddress(playerAddress)}
         </div>
@@ -204,14 +204,14 @@ export const PlayerProfile: React.FC<PlayerProfileProps> = ({
             }}>
               <span style={{
                 fontSize: SomniaTheme.fontSize.sm,
-                color: SomniaColors.gray[600],
+                color: SomniaColors.foregroundSecondary,
               }}>
                 Experience
               </span>
               <span style={{
                 fontSize: SomniaTheme.fontSize.sm,
                 fontWeight: SomniaTheme.fontWeight.semibold,
-                color: SomniaColors.gray[900],
+                color: SomniaColors.foreground,
               }}>
                 {stats?.experience || 0} / {stats?.nextLevelExp || 100}
               </span>
@@ -221,7 +221,7 @@ export const PlayerProfile: React.FC<PlayerProfileProps> = ({
             <div style={{
               width: '100%',
               height: '6px',
-              background: SomniaColors.gray[200],
+              background: SomniaColors.backgroundTertiary,
               borderRadius: SomniaTheme.borderRadius.full,
               overflow: 'hidden',
             }}>
@@ -241,11 +241,11 @@ export const PlayerProfile: React.FC<PlayerProfileProps> = ({
           onClick={onEditProfile}
           style={{
             background: 'transparent',
-            border: `1px solid ${SomniaColors.gray[300]}`,
+            border: `1px solid ${SomniaColors.border}`,
             borderRadius: SomniaTheme.borderRadius.md,
             padding: SomniaTheme.spacing.sm,
             cursor: 'pointer',
-            color: SomniaColors.gray[600],
+            color: SomniaColors.foregroundSecondary,
             transition: 'all 0.2s ease-in-out',
           }}
         >
@@ -273,7 +273,7 @@ export const PlayerProfile: React.FC<PlayerProfileProps> = ({
           margin: `0 0 ${SomniaTheme.spacing.md} 0`,
           fontSize: SomniaTheme.fontSize.lg,
           fontWeight: SomniaTheme.fontWeight.semibold,
-          color: SomniaColors.gray[900],
+          color: SomniaColors.foreground,
         }}>
           Statistics
         </h4>
@@ -285,7 +285,7 @@ export const PlayerProfile: React.FC<PlayerProfileProps> = ({
         }}>
           {statItems.map(({ label, value }) => (
             <div key={label} style={{
-              background: SomniaColors.gray[50],
+              background: SomniaColors.backgroundSecondary,
               padding: SomniaTheme.spacing.md,
               borderRadius: SomniaTheme.borderRadius.lg,
               textAlign: 'center',
@@ -293,14 +293,14 @@ export const PlayerProfile: React.FC<PlayerProfileProps> = ({
               <div style={{
                 fontSize: variant === 'detailed' ? SomniaTheme.fontSize.xl : SomniaTheme.fontSize.lg,
                 fontWeight: SomniaTheme.fontWeight.bold,
-                color: SomniaColors.gray[900],
+                color: SomniaColors.foreground,
                 marginBottom: SomniaTheme.spacing.xs,
               }}>
                 {value}
               </div>
               <div style={{
                 fontSize: SomniaTheme.fontSize.sm,
-                color: SomniaColors.gray[600],
+                color: SomniaColors.foregroundSecondary,
               }}>
                 {label}
               </div>
@@ -320,7 +320,7 @@ export const PlayerProfile: React.FC<PlayerProfileProps> = ({
           margin: `0 0 ${SomniaTheme.spacing.md} 0`,
           fontSize: SomniaTheme.fontSize.lg,
           fontWeight: SomniaTheme.fontWeight.semibold,
-          color: SomniaColors.gray[900],
+          color: SomniaColors.foreground,
         }}>
           Achievements ({achievements.filter((a: any) => a.isUnlocked).length}/{achievements.length})
         </h4>
@@ -336,10 +336,10 @@ export const PlayerProfile: React.FC<PlayerProfileProps> = ({
               borderRadius: SomniaTheme.borderRadius.lg,
               background: achievement.isUnlocked 
                 ? SomniaColors.primaryGradient 
-                : SomniaColors.gray[200],
+                : SomniaColors.backgroundTertiary,
               color: achievement.isUnlocked 
                 ? SomniaColors.white 
-                : SomniaColors.gray[500],
+                : SomniaColors.foregroundTertiary,
               fontSize: SomniaTheme.fontSize.sm,
               fontWeight: SomniaTheme.fontWeight.medium,
               opacity: achievement.isUnlocked ? 1 : 0.6,

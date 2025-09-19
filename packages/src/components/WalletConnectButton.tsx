@@ -76,7 +76,7 @@ export const WalletConnectButton: React.FC<WalletConnectButtonProps> = ({
       border: 'none',
       cursor: disabled ? 'not-allowed' : 'pointer',
       transition: 'all 0.2s ease-in-out',
-      fontFamily: 'inherit',
+      fontFamily: SomniaTheme.fonts.inter,
     }
 
     const sizeStyles = {
@@ -87,7 +87,7 @@ export const WalletConnectButton: React.FC<WalletConnectButtonProps> = ({
       },
       md: {
         padding: `${SomniaTheme.spacing.md} ${SomniaTheme.spacing.lg}`,
-        fontSize: SomniaTheme.fontSize.md,
+        fontSize: SomniaTheme.fontSize.base,
         minHeight: '3rem',
       },
       lg: {
@@ -99,37 +99,39 @@ export const WalletConnectButton: React.FC<WalletConnectButtonProps> = ({
 
     const variantStyles = {
       primary: {
-        background: disabled ? SomniaColors.disabled : SomniaColors.primaryGradient,
+        background: disabled ? SomniaColors.gray[300] : SomniaColors.primaryGradient,
         color: SomniaColors.white,
-        boxShadow: disabled ? 'none' : SomniaTheme.shadow.somnia,
+        border: '1px solid transparent',
+        boxShadow: disabled ? 'none' : SomniaTheme.shadow.soft,
         '&:hover': !disabled ? {
-          background: SomniaColors.hover,
+          background: `linear-gradient(135deg, ${SomniaColors.brandPrimary}E6 0%, ${SomniaColors.brandSecondary}E6 100%)`,
           transform: 'translateY(-1px)',
-          boxShadow: '0 12px 30px rgba(173, 0, 255, 0.3), 0 6px 15px rgba(51, 59, 255, 0.2)',
+          boxShadow: SomniaTheme.shadow.glow,
         } : {},
         '&:active': !disabled ? {
-          background: SomniaColors.active,
           transform: 'translateY(0)',
+          boxShadow: SomniaTheme.shadow.soft,
         } : {},
       },
       secondary: {
-        background: disabled ? SomniaColors.gray[300] : SomniaColors.gray[100],
-        color: disabled ? SomniaColors.gray[400] : SomniaColors.gray[800],
-        border: `1px solid ${disabled ? SomniaColors.gray[300] : SomniaColors.gray[300]}`,
+        background: disabled ? SomniaColors.surfaceTertiary : SomniaColors.backgroundSecondary,
+        color: disabled ? SomniaColors.foregroundQuaternary : SomniaColors.foreground,
+        border: `1px solid ${disabled ? SomniaColors.border : SomniaColors.border}`,
         '&:hover': !disabled ? {
-          background: SomniaColors.gray[50],
-          borderColor: SomniaColors.somniaViolet,
+          background: SomniaColors.backgroundHover,
+          borderColor: SomniaColors.borderSecondary,
           transform: 'translateY(-1px)',
         } : {},
       },
       outline: {
         background: 'transparent',
-        color: disabled ? SomniaColors.gray[400] : SomniaColors.somniaViolet,
-        border: `2px solid ${disabled ? SomniaColors.gray[300] : SomniaColors.somniaViolet}`,
+        color: disabled ? SomniaColors.foregroundQuaternary : SomniaColors.brandPrimary,
+        border: `1px solid ${disabled ? SomniaColors.border : SomniaColors.brandPrimary}`,
         '&:hover': !disabled ? {
-          background: SomniaColors.primaryGradient,
+          background: SomniaColors.brandPrimary,
           color: SomniaColors.white,
           transform: 'translateY(-1px)',
+          boxShadow: SomniaTheme.shadow.soft,
         } : {},
       },
     }

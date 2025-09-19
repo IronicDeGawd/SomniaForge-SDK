@@ -54,10 +54,10 @@ export const SomniaButton: React.FC<SomniaButtonProps> = ({
       alignItems: 'center',
       justifyContent: 'center',
       gap: SomniaTheme.spacing.sm,
-      fontFamily: 'inherit',
-      fontWeight: SomniaTheme.fontWeight.semibold,
+      fontFamily: SomniaTheme.fonts.inter,
+      fontWeight: SomniaTheme.fontWeight.medium,
       border: 'none',
-      borderRadius: SomniaTheme.borderRadius.lg,
+      borderRadius: SomniaTheme.borderRadius.md,
       cursor: disabled || loading ? 'not-allowed' : 'pointer',
       transition: 'all 0.2s ease-in-out',
       textDecoration: 'none',
@@ -65,6 +65,7 @@ export const SomniaButton: React.FC<SomniaButtonProps> = ({
       position: 'relative' as const,
       overflow: 'hidden' as const,
       width: fullWidth ? '100%' : 'auto',
+      lineHeight: SomniaTheme.lineHeight.normal,
     }
 
     const sizeStyles = {
@@ -75,7 +76,7 @@ export const SomniaButton: React.FC<SomniaButtonProps> = ({
       },
       md: {
         padding: `${SomniaTheme.spacing.md} ${SomniaTheme.spacing.lg}`,
-        fontSize: SomniaTheme.fontSize.md,
+        fontSize: SomniaTheme.fontSize.base,
         minHeight: '2.75rem',
       },
       lg: {
@@ -87,45 +88,57 @@ export const SomniaButton: React.FC<SomniaButtonProps> = ({
 
     const variantStyles = {
       primary: {
-        background: disabled || loading ? SomniaColors.disabled : SomniaColors.primaryGradient,
+        background: disabled || loading
+          ? SomniaColors.gray[300]
+          : SomniaColors.primaryGradient,
         color: SomniaColors.white,
-        boxShadow: disabled || loading ? 'none' : SomniaTheme.shadow.somnia,
+        border: '1px solid transparent',
+        boxShadow: disabled || loading ? 'none' : SomniaTheme.shadow.soft,
         '&:hover': !disabled && !loading ? {
-          background: SomniaColors.hover,
+          background: `linear-gradient(135deg, ${SomniaColors.brandPrimary}E6 0%, ${SomniaColors.brandSecondary}E6 100%)`,
           transform: 'translateY(-1px)',
-          boxShadow: '0 12px 30px rgba(173, 0, 255, 0.3), 0 6px 15px rgba(51, 59, 255, 0.2)',
+          boxShadow: SomniaTheme.shadow.glow,
         } : {},
         '&:active': !disabled && !loading ? {
-          background: SomniaColors.active,
           transform: 'translateY(0)',
+          boxShadow: SomniaTheme.shadow.soft,
         } : {},
       },
       secondary: {
-        background: disabled || loading ? SomniaColors.gray[200] : SomniaColors.gray[100],
-        color: disabled || loading ? SomniaColors.gray[400] : SomniaColors.gray[800],
-        border: `1px solid ${disabled || loading ? SomniaColors.gray[300] : SomniaColors.gray[300]}`,
+        background: disabled || loading
+          ? SomniaColors.surfaceTertiary
+          : SomniaColors.backgroundSecondary,
+        color: disabled || loading
+          ? SomniaColors.foregroundQuaternary
+          : SomniaColors.foreground,
+        border: `1px solid ${disabled || loading ? SomniaColors.gray[300] : SomniaColors.border}`,
         '&:hover': !disabled && !loading ? {
-          background: SomniaColors.gray[50],
-          borderColor: SomniaColors.somniaViolet,
-          color: SomniaColors.somniaViolet,
+          background: SomniaColors.backgroundHover,
+          borderColor: SomniaColors.borderSecondary,
           transform: 'translateY(-1px)',
         } : {},
       },
       outline: {
         background: 'transparent',
-        color: disabled || loading ? SomniaColors.gray[400] : SomniaColors.somniaViolet,
-        border: `2px solid ${disabled || loading ? SomniaColors.gray[300] : SomniaColors.somniaViolet}`,
+        color: disabled || loading
+          ? SomniaColors.foregroundQuaternary
+          : SomniaColors.brandPrimary,
+        border: `1px solid ${disabled || loading ? SomniaColors.gray[300] : SomniaColors.brandPrimary}`,
         '&:hover': !disabled && !loading ? {
-          background: SomniaColors.primaryGradient,
+          background: SomniaColors.brandPrimary,
           color: SomniaColors.white,
           transform: 'translateY(-1px)',
+          boxShadow: SomniaTheme.shadow.soft,
         } : {},
       },
       ghost: {
         background: 'transparent',
-        color: disabled || loading ? SomniaColors.gray[400] : SomniaColors.somniaViolet,
+        color: disabled || loading
+          ? SomniaColors.foregroundQuaternary
+          : SomniaColors.brandPrimary,
+        border: 'none',
         '&:hover': !disabled && !loading ? {
-          background: `${SomniaColors.somniaViolet}10`,
+          background: `${SomniaColors.brandPrimary}10`,
           transform: 'translateY(-1px)',
         } : {},
       },
