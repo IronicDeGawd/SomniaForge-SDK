@@ -60,12 +60,20 @@ const PitchDeck = () => {
     if (!document.fullscreenElement) {
       try {
         await document.documentElement.requestFullscreen();
+        // Set zoom to 100% for desktop in fullscreen
+        if (!isMobile) {
+          setScale(1.0);
+        }
       } catch (err) {
         console.error('Error attempting to enable fullscreen:', err);
       }
     } else {
       try {
         await document.exitFullscreen();
+        // Restore original zoom for desktop when exiting fullscreen
+        if (!isMobile) {
+          setScale(0.7);
+        }
       } catch (err) {
         console.error('Error attempting to exit fullscreen:', err);
       }
