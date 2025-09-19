@@ -1,0 +1,1194 @@
+{
+  "sections": [
+    {
+      "id": "getting-started",
+      "title": "Getting Started",
+      "icon": "Play",
+      "description": "Quick setup and basic usage",
+      "items": [
+        {
+          "id": "quick-start",
+          "title": "Quick Start",
+          "description": "Get up and running in minutes",
+          "tags": ["setup", "basic"],
+          "content": {
+            "title": "Quick Start Guide",
+            "description": "Get your first SomniaForge game running in under 5 minutes with this comprehensive guide.",
+            "sections": [
+              {
+                "title": "Installation",
+                "icon": "Terminal",
+                "type": "code",
+                "status": "functional",
+                "code": "npm install @somniaforge/sdk\n\n# or with yarn\nyarn add @somniaforge/sdk\n\n# or with pnpm\npnpm add @somniaforge/sdk",
+                "actions": [
+                  { "type": "copy", "label": "Copy Command" }
+                ]
+              },
+              {
+                "title": "Basic SDK Setup",
+                "icon": "Code2",
+                "type": "code",
+                "status": "functional",
+                "statusMessage": "Core wallet connection and WebSocket functionality tested with Rock Paper Scissors demo.",
+                "code": "import { SomniaGameSDK } from '@somniaforge/sdk';\n\n// Initialize the SDK\nconst sdk = new SomniaGameSDK({\n  rpcUrl: 'https://dream-rpc.somnia.network',\n  wsUrl: 'wss://dream-rpc.somnia.network/ws',\n  chainId: 50312,\n  contractAddresses: {\n    gameSession: '0x742d35Cc...',\n    playerRegistry: '0x89A5C3F1...',\n    gameEconomy: '0x1234567890...',\n    leaderboard: '0xfedcba0987...',\n    multiplayerGame: '0x3456789012...'\n  }\n});\n\n// Initialize - connects wallet and WebSocket\nconst { account, chainId, isConnected } = await sdk.initialize();\nconsole.log('Connected:', account, 'Chain:', chainId);\n\n// Alternative: Initialize with existing provider\n// await sdk.initializeWithProvider(window.ethereum, account, chainId);",
+                "actions": [
+                  { "type": "copy", "label": "Copy Code" },
+                  { "type": "demo", "label": "Try Interactive Demo" }
+                ]
+              },
+              {
+                "title": "Next Steps",
+                "icon": "CheckCircle",
+                "type": "links",
+                "links": [
+                  { "to": "/docs/sdk-reference", "label": "SDK Reference Documentation" },
+                  { "to": "/demo", "label": "Try the Live Demo" },
+                  { "to": "/docs/examples", "label": "View Example Games" }
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "id": "installation",
+          "title": "Installation Guide",
+          "description": "Detailed installation and setup",
+          "tags": ["setup", "npm", "configuration"],
+          "content": {
+            "title": "Installation Guide",
+            "description": "Complete setup guide for SomniaForge SDK in different environments.",
+            "sections": [
+              {
+                "title": "Package Manager Installation",
+                "type": "multi-code",
+                "items": [
+                  { "title": "NPM", "code": "npm install @somniaforge/sdk viem" },
+                  { "title": "Yarn", "code": "yarn add @somniaforge/sdk viem" },
+                  { "title": "PNPM", "code": "pnpm add @somniaforge/sdk viem" }
+                ]
+              },
+              {
+                "title": "Environment Setup",
+                "type": "multi-code",
+                "items": [
+                  {
+                    "title": "TypeScript Configuration",
+                    "code": "// tsconfig.json\n{\n  \"compilerOptions\": {\n    \"target\": \"ES2020\",\n    \"module\": \"ESNext\",\n    \"moduleResolution\": \"node\",\n    \"allowSyntheticDefaultImports\": true,\n    \"esModuleInterop\": true,\n    \"skipLibCheck\": true,\n    \"strict\": true\n  }\n}"
+                  },
+                  {
+                    "title": "Vite Configuration",
+                    "code": "// vite.config.ts\nimport { defineConfig } from 'vite'\nimport react from '@vitejs/plugin-react'\n\nexport default defineConfig({\n  plugins: [react()],\n  define: {\n    global: 'globalThis',\n  },\n  resolve: {\n    alias: {\n      process: 'process/browser',\n      buffer: 'buffer',\n      util: 'util',\n    },\n  },\n})"
+                  }
+                ]
+              },
+              {
+                "title": "Network Configuration",
+                "type": "code",
+                "description": "The SDK automatically connects to Somnia Network, but you can customize the configuration:",
+                "code": "const config = {\n  rpcUrl: 'https://dream-rpc.somnia.network',\n  wsUrl: 'wss://dream-rpc.somnia.network/ws',\n  chainId: 50312,\n  contractAddresses: {\n    gameSession: '0x742d35Cc64C5732D5aC8932d6E96FE14323b9C9B',\n    playerRegistry: '0x89A5C3F1b7A0032e4b2f0FfFFA5B5a5b3b2A1D3C',\n    gameEconomy: '0x1234567890abcdef1234567890abcdef12345678',\n    leaderboard: '0xfedcba0987654321fedcba0987654321fedcba09',\n    multiplayerGame: '0x3456789012345678901234567890123456789012'\n  }\n}"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "sdk-reference",
+      "title": "SDK Reference",
+      "icon": "Code2",
+      "description": "Complete API documentation",
+      "items": [
+        {
+          "id": "core-classes",
+          "title": "Core SDK Class",
+          "description": "Main SomniaGameSDK class and methods",
+          "tags": ["api", "core"],
+          "content": {
+            "title": "SomniaGameSDK Class",
+            "description": "The main entry point for all SomniaForge SDK functionality. Provides managers for game sessions, player registry, wallet connections, and real-time WebSocket communication.",
+            "sections": [
+              {
+                "title": "Constructor",
+                "type": "code",
+                "code": "constructor(config?: SDKConfig)\n\n// Configuration options\ninterface SDKConfig {\n  rpcUrl?: string                    // Default: https://dream-rpc.somnia.network\n  wsUrl?: string                     // Default: wss://dream-rpc.somnia.network/ws\n  chainId?: number                   // Default: 50312 (Somnia)\n  contractAddresses?: {\n    gameSession?: Address\n    playerRegistry?: Address\n    gameEconomy?: Address\n    leaderboard?: Address\n    multiplayerGame?: Address\n  }\n}"
+              },
+              {
+                "title": "Core Methods",
+                "type": "api-methods",
+                "methods": [
+                  {
+                    "name": "initialize()",
+                    "description": "Connect wallet and WebSocket, returns connection status",
+                    "signature": "async initialize(): Promise<{\n  account: `0x${string}`\n  chainId: number\n  isConnected: boolean\n}>"
+                  },
+                  {
+                    "name": "initializeWithProvider()",
+                    "description": "Initialize with existing wallet provider",
+                    "signature": "async initializeWithProvider(\n  provider: any,\n  account: string,\n  chainId: number\n): Promise<{ account: `0x${string}`, chainId: number, isConnected: boolean }>"
+                  },
+                  {
+                    "name": "getConnectionStatus()",
+                    "description": "Get current wallet and WebSocket connection status",
+                    "signature": "getConnectionStatus(): {\n  wallet: {\n    connected: boolean\n    account: `0x${string}` | null\n    chainId: number | null\n    onSomniaNetwork: boolean\n  }\n  webSocket: {\n    connected: boolean\n    stats: ConnectionStats\n  }\n}"
+                  }
+                ]
+              },
+              {
+                "title": "Manager Properties",
+                "type": "property-list",
+                "properties": [
+                  {
+                    "name": "sdk.gameSession",
+                    "description": "GameSessionManager - Create and manage multiplayer game sessions"
+                  },
+                  {
+                    "name": "sdk.playerRegistry",
+                    "description": "PlayerRegistryManager - Player profiles, stats, and achievements"
+                  },
+                  {
+                    "name": "sdk.wallet",
+                    "description": "WalletConnector - Wallet connection and network management"
+                  },
+                  {
+                    "name": "sdk.webSocket",
+                    "description": "WebSocketManager - Real-time event subscriptions and monitoring"
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "id": "game-session-manager",
+          "title": "GameSessionManager",
+          "description": "Game session creation and management",
+          "tags": ["api", "sessions", "multiplayer"],
+          "content": {
+            "title": "GameSessionManager",
+            "description": "Manages multiplayer game sessions including creation, joining, move submission, and result tracking. Supports 2-8 player games with customizable entry fees and time limits.",
+            "sections": [
+              {
+                "title": "Session Creation",
+                "type": "code",
+                "status": "under-development",
+                "statusMessage": "Multi-player sessions (3+ players) and custom entry fees are untested. Basic 2-player sessions work with Rock Paper Scissors demo.",
+                "code": "// Create a new game session\nconst sessionOptions = {\n  maxPlayers: 4,                    // 2-8 players supported\n  entryFee: parseEther('0.05'),     // Entry fee in wei\n  moveTimeLimit: 300                // 5-minute move timer\n}\n\nconst sessionId = await sdk.gameSession.createSession(sessionOptions)\nconsole.log('Session created:', sessionId)\n\n// Join an existing session\nawait sdk.gameSession.joinSession(sessionId)\n\n// Start session (if creator)\nawait sdk.gameSession.startSession(sessionId)"
+              },
+              {
+                "title": "Session Information",
+                "type": "api-methods",
+                "methods": [
+                  {
+                    "name": "getSession(sessionId)",
+                    "description": "Get complete session details",
+                    "code": "const session = await sdk.gameSession.getSession(sessionId)\n// Returns: { creator, maxPlayers, playerCount, entryFee,\n//           timeLimit, state, createdAt, startedAt }"
+                  },
+                  {
+                    "name": "getSessionPlayers(sessionId)",
+                    "description": "Get all players in a session",
+                    "code": "const players = await sdk.gameSession.getSessionPlayers(sessionId)\n// Returns: Array of player addresses"
+                  },
+                  {
+                    "name": "getSessionPlayer(sessionId, playerAddress)",
+                    "description": "Get detailed player information",
+                    "code": "const playerInfo = await sdk.gameSession.getSessionPlayer(sessionId, playerAddress)\n// Returns: { wallet, moveHash, joinedAt, moveSubmittedAt,\n//           hasSubmittedMove, isActive }"
+                  }
+                ]
+              },
+              {
+                "title": "Move System",
+                "type": "code",
+                "code": "// Create secure move hash (commit-reveal mechanism)\nconst moveHash = GameSessionManager.createMoveHash(\"rock\", \"randomSalt123\")\n\n// Submit encrypted move\nawait sdk.gameSession.submitMove(sessionId, moveHash)\n\n// Reveal move after all players have committed\nawait sdk.gameSession.revealMove(sessionId, \"rock\", \"randomSalt123\")"
+              },
+              {
+                "title": "Event Listeners",
+                "type": "code",
+                "code": "// Set up comprehensive event callbacks\nsdk.gameSession.setEventCallbacks({\n  onSessionCreated: (event) => {\n    console.log(`Session ${event.sessionId} created by ${event.creator}`)\n  },\n  onPlayerJoined: (event) => {\n    console.log(`Player ${event.player} joined session ${event.sessionId}`)\n  },\n  onSessionStarted: (event) => {\n    console.log(`Session ${event.sessionId} started at ${event.startedAt}`)\n  },\n  onMoveSubmitted: (event) => {\n    console.log(`Move submitted in session ${event.sessionId}`)\n  },\n  onSessionCompleted: (event) => {\n    console.log(`Session ${event.sessionId} completed. Winners: ${event.winners}`)\n  },\n  onPrizeDistributed: (event) => {\n    console.log(`Prize ${event.amount} sent to ${event.player}`)\n  }\n})"
+              }
+            ]
+          }
+        },
+        {
+          "id": "player-registry-manager",
+          "title": "PlayerRegistryManager",
+          "description": "Player profiles, stats, and achievements",
+          "tags": ["api", "players", "stats"],
+          "content": {
+            "title": "PlayerRegistryManager",
+            "description": "Comprehensive player management system with registration, profiles, statistics tracking, achievements, and leaderboards.",
+            "sections": [
+              {
+                "title": "Player Registration",
+                "type": "code",
+                "status": "untested",
+                "statusMessage": "Player registration system is fully implemented but untested. Username validation and availability checks need testing.",
+                "code": "// Register a new player\nawait sdk.playerRegistry.registerPlayer(\"GameMaster123\")\n\n// Check if player is registered\nconst isRegistered = await sdk.playerRegistry.isPlayerRegistered(playerAddress)\n\n// Check username availability\nconst isAvailable = await sdk.playerRegistry.isUsernameAvailable(\"NewPlayer\")\n\n// Validate username format\nconst isValid = sdk.playerRegistry.validateUsername(\"Player_123\")\n// Rules: 3-20 characters, alphanumeric + underscore only"
+              },
+              {
+                "title": "Player Profiles & Stats",
+                "type": "code",
+                "status": "untested",
+                "statusMessage": "Advanced statistics tracking including win rates, game times, and earnings are untested. Basic profile retrieval may work.",
+                "code": "// Get comprehensive player profile\nconst profile = await sdk.playerRegistry.getPlayerProfile(playerAddress)\n// Returns: {\n//   username, registrationTime, totalGames, gamesWon, gamesLost,\n//   currentWinStreak, bestWinStreak, totalEarnings, totalSpent,\n//   isActive, level, experience\n// }\n\n// Get detailed statistics\nconst stats = await sdk.playerRegistry.getPlayerStats(playerAddress)\n// Returns: {\n//   fastestWin, averageGameTime, rockPaperScissorsWins,\n//   tournamentWins, achievementsUnlocked\n// }\n\n// Calculate win rate percentage\nconst winRate = await sdk.playerRegistry.getWinRatePercentage(playerAddress)"
+              },
+              {
+                "title": "Achievement System",
+                "type": "code",
+                "status": "untested",
+                "statusMessage": "Complete achievement system implemented but completely untested. Achievement unlocking triggers and reward distribution need testing.",
+                "code": "// Check specific achievements\nconst hasFirstWin = await sdk.playerRegistry.hasAchievement(\n  playerAddress, \"FIRST_WIN\"\n)\n\n// Get achievement details\nconst achievement = await sdk.playerRegistry.getAchievement(\"SPEED_DEMON\")\n// Returns: { name, description, reward, isActive }\n\n// Available achievements:\n// - FIRST_WIN: Complete your first game\n// - SPEED_DEMON: Win a game in under 30 seconds  \n// - WIN_STREAK_5: Win 5 games in a row\n// - HIGH_ROLLER: Play with 1+ STT entry fee\n// - VETERAN: Play 100+ games\n// - CHAMPION: Reach top 10 on leaderboard"
+              },
+              {
+                "title": "Leaderboards",
+                "type": "code",
+                "code": "// Get paginated leaderboard data\nconst topPlayers = await sdk.playerRegistry.getLeaderboardData(0, 50)\n// Returns top 50 players with: playerAddress, username, totalWins, totalEarnings\n\n// Get total registered players\nconst totalPlayers = await sdk.playerRegistry.getTotalPlayers()\n\n// Get player's ranking position\nconst playerRank = await sdk.playerRegistry.getPlayerRank(playerAddress)"
+              }
+            ]
+          }
+        },
+        {
+          "id": "websocket-manager",
+          "title": "WebSocketManager",
+          "description": "Real-time event subscriptions and monitoring",
+          "tags": ["api", "websocket", "realtime"],
+          "content": {
+            "title": "WebSocketManager",
+            "description": "Advanced WebSocket management for real-time Somnia Network event monitoring with sub-500ms latency, automatic reconnection, and sophisticated filtering capabilities.",
+            "sections": [
+              {
+                "title": "Connection Management",
+                "type": "code",
+                "code": "// Connect to WebSocket\nawait sdk.webSocket.connect()\n\n// Check connection status\nconst isConnected = sdk.webSocket.isWebSocketConnected()\n\n// Get connection statistics\nconst stats = sdk.webSocket.getConnectionStats()\n// Returns: { connected, reconnectAttempts, activeWatchers, eventCallbacks }"
+              },
+              {
+                "title": "Event Subscriptions",
+                "type": "code",
+                "code": "// Session-specific events\nconst sessionSubId = await sdk.webSocket.subscribeToSessionEvents(\n  sessionId, (event) => console.log('Session event:', event)\n)\n\n// Player-specific events across all games\nconst playerSubId = await sdk.webSocket.subscribeToPlayerEvents(\n  playerAddress, (event) => console.log('Player event:', event)\n)\n\n// Rock Paper Scissors specific events\nconst rpsSubId = await sdk.webSocket.subscribeToRockPaperScissorsEvents(\n  contractAddress, rpsAbi, { sessionId: BigInt(sessionId) },\n  (event) => {\n    switch (event.eventName) {\n      case 'PlayerJoined': break\n      case 'MoveCommitted': break  \n      case 'GameResultDetermined': break\n    }\n  }\n)"
+              },
+              {
+                "title": "Somnia Network Monitoring",
+                "type": "code",
+                "code": "// Watch for new blocks\nconst blockWatchId = await sdk.webSocket.watchBlocks((blockNumber) => {\n  console.log(`New block: ${blockNumber}`)\n})\n\n// Wait for specific transaction confirmation\nconst receipt = await sdk.webSocket.waitForTransaction(txHash, (receipt) => {\n  console.log('Transaction confirmed:', receipt)\n})\n\n// Get latest block number\nconst latestBlock = await sdk.webSocket.getLatestBlockNumber()"
+              },
+              {
+                "title": "Advanced Features",
+                "type": "feature-list",
+                "features": [
+                  {
+                    "title": "Automatic Reconnection",
+                    "items": [
+                      "Exponential backoff retry strategy",
+                      "Connection health monitoring (30-second ping intervals)",
+                      "Automatic resubscription after reconnection",
+                      "Subscription context preservation"
+                    ]
+                  },
+                  {
+                    "title": "Event Filtering",
+                    "items": [
+                      "Contract address filtering",
+                      "Event name filtering",
+                      "Parameter-based filtering (sessionId, playerAddress)",
+                      "Custom ABI support"
+                    ]
+                  },
+                  {
+                    "title": "Performance Features",
+                    "items": [
+                      "Sub-500ms event notification latency",
+                      "Automatic event decoding from raw logs",
+                      "Memory-efficient subscription management",
+                      "Minimal bandwidth usage (<1KB/minute per session)"
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "smart-contracts",
+      "title": "Smart Contracts",
+      "icon": "Database",
+      "description": "Contract interfaces and deployment",
+      "items": [
+        {
+          "id": "game-session",
+          "title": "GameSession Contract",
+          "description": "Multiplayer session management",
+          "tags": ["contracts", "sessions"],
+          "content": {
+            "title": "GameSession Contract",
+            "description": "Smart contract for managing multiplayer game sessions on Somnia Network with support for 2-8 players, entry fees, and time limits.",
+            "sections": [
+              {
+                "title": "Contract Overview",
+                "type": "text",
+                "content": "The GameSession contract handles the complete lifecycle of multiplayer games including session creation, player management, move submission, and prize distribution."
+              },
+              {
+                "title": "Key Functions",
+                "type": "code",
+                "code": "// Create a new game session\nfunction createSession(\n  uint8 maxPlayers,\n  uint256 entryFee,\n  uint256 moveTimeLimit\n) external payable returns (uint256 sessionId)\n\n// Join an existing session\nfunction joinSession(uint256 sessionId) external payable\n\n// Submit encrypted move\nfunction submitMove(uint256 sessionId, bytes32 moveHash) external\n\n// Reveal move after commit phase\nfunction revealMove(\n  uint256 sessionId,\n  string memory move,\n  string memory salt\n) external"
+              },
+              {
+                "title": "Events",
+                "type": "code",
+                "code": "event SessionCreated(\n  uint256 indexed sessionId,\n  address indexed creator,\n  uint8 maxPlayers,\n  uint256 entryFee\n);\n\nevent PlayerJoined(\n  uint256 indexed sessionId,\n  address indexed player,\n  uint8 playerCount\n);\n\nevent SessionStarted(uint256 indexed sessionId);\n\nevent MoveSubmitted(\n  uint256 indexed sessionId,\n  address indexed player\n);\n\nevent SessionCompleted(\n  uint256 indexed sessionId,\n  address[] winners,\n  uint256 prizePerWinner\n);"
+              },
+              {
+                "title": "Deployed Address",
+                "type": "address",
+                "address": "0x742d35Cc64C5732D5aC8932d6E96FE14323b9C9B",
+                "explorer": "https://shannon-explorer.somnia.network/address/0x742d35Cc64C5732D5aC8932d6E96FE14323b9C9B",
+                "verified": true
+              }
+            ]
+          }
+        },
+        {
+          "id": "player-registry",
+          "title": "PlayerRegistry Contract",
+          "description": "Player profiles and statistics",
+          "tags": ["contracts", "players"],
+          "content": {
+            "title": "PlayerRegistry Contract",
+            "description": "Manages player registration, profiles, statistics tracking, achievements, and leaderboards with comprehensive analytics.",
+            "sections": [
+              {
+                "title": "Registration Functions",
+                "type": "code",
+                "code": "// Register a new player\nfunction registerPlayer(string memory username) external\n\n// Check if username is available\nfunction isUsernameAvailable(string memory username) \n  external view returns (bool)\n\n// Check if player is registered\nfunction isPlayerRegistered(address player) \n  external view returns (bool)"
+              },
+              {
+                "title": "Profile & Stats",
+                "type": "code",
+                "code": "// Get complete player profile\nfunction getPlayerProfile(address player) external view returns (\n  string memory username,\n  uint256 registrationTime,\n  uint256 totalGames,\n  uint256 gamesWon,\n  uint256 gamesLost,\n  uint256 currentWinStreak,\n  uint256 bestWinStreak,\n  uint256 totalEarnings,\n  uint256 totalSpent,\n  bool isActive,\n  uint256 level,\n  uint256 experience\n)"
+              },
+              {
+                "title": "Achievement System",
+                "type": "code",
+                "code": "// Check if player has specific achievement\nfunction hasAchievement(address player, string memory achievementKey)\n  external view returns (bool)\n\n// Get achievement details\nfunction getAchievement(string memory key) external view returns (\n  string memory name,\n  string memory description,\n  uint256 reward,\n  bool isActive\n)"
+              },
+              {
+                "title": "Deployed Address",
+                "type": "address",
+                "address": "0x89A5C3F1b7A0032e4b2f0FfFFA5B5a5b3b2A1D3C",
+                "explorer": "https://shannon-explorer.somnia.network/address/0x89A5C3F1b7A0032e4b2f0FfFFA5B5a5b3b2A1D3C",
+                "verified": true
+              }
+            ]
+          }
+        },
+        {
+          "id": "rock-paper-scissors",
+          "title": "RockPaperScissors Contract",
+          "description": "Example game implementation",
+          "tags": ["contracts", "games", "example"],
+          "content": {
+            "title": "RockPaperScissors Contract",
+            "description": "Complete implementation of Rock Paper Scissors game demonstrating commit-reveal mechanics, automatic prize distribution, and real-time event handling.",
+            "sections": [
+              {
+                "title": "Game Functions",
+                "type": "code",
+                "code": "// Create a new RPS game\nfunction createRPSGame(uint256 entryFee) \n  external payable returns (uint256 sessionId)\n\n// Join an existing game\nfunction joinRPSGame(uint256 sessionId) external payable\n\n// Commit move (rock/paper/scissors)\nfunction commitMove(uint256 sessionId, bytes32 moveHash) external\n\n// Reveal move after both players commit\nfunction revealMove(\n  uint256 sessionId,\n  string memory move,\n  string memory salt\n) external"
+              },
+              {
+                "title": "Game Events",
+                "type": "code",
+                "code": "event RPSGameCreated(\n  uint256 indexed sessionId,\n  address indexed creator,\n  uint256 entryFee\n);\n\nevent PlayerJoined(\n  uint256 indexed sessionId,\n  address indexed player,\n  uint8 playerCount\n);\n\nevent MoveCommitted(\n  uint256 indexed sessionId,\n  address indexed player\n);\n\nevent GameResultDetermined(\n  uint256 indexed sessionId,\n  address indexed winner,\n  string winnerMove,\n  string loserMove,\n  uint256 prize\n);\n\nevent AutoWithdrawal(\n  uint256 indexed sessionId,\n  address indexed player,\n  uint256 amount\n);"
+              },
+              {
+                "title": "Deployed Address",
+                "type": "address",
+                "address": "0xaD114670d92588036240849b36A95FE4d10Ad08F",
+                "explorer": "https://shannon-explorer.somnia.network/address/0xaD114670d92588036240849b36A95FE4d10Ad08F",
+                "verified": true
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "components",
+      "title": "UI Components",
+      "icon": "Layers",
+      "description": "React components with SomniaForge design system",
+      "items": [
+        {
+          "id": "overview",
+          "title": "Components Overview",
+          "description": "Introduction to SomniaForge UI components",
+          "tags": ["components", "overview", "design-system"],
+          "content": {
+            "title": "SomniaForge UI Components",
+            "description": "A comprehensive set of React components designed for building games on the Somnia Network. All components feature a consistent design system that matches the SomniaForge brand identity with professional styling, proper typography, and responsive design.",
+            "sections": [
+              {
+                "title": "Design System",
+                "type": "design-tokens",
+                "tokens": {
+                  "colors": {
+                    "brandPrimary": "#fe54ff",
+                    "brandSecondary": "#a064ff",
+                    "brandAccent": "#61f1fd"
+                  },
+                  "typography": {
+                    "headings": "Geist",
+                    "body": "Inter",
+                    "monospace": "JetBrains Mono"
+                  }
+                }
+              },
+              {
+                "title": "Installation",
+                "type": "code",
+                "code": "npm install @somniaforge/sdk\n\n# Import components\nimport {\n  SomniaButton,\n  GameCard,\n  PlayerProfile,\n  GameStats,\n  WalletConnectButton\n} from '@somniaforge/sdk'",
+                "actions": [
+                  { "type": "copy", "label": "Copy Installation" }
+                ]
+              },
+              {
+                "title": "Available Components",
+                "type": "component-grid",
+                "components": [
+                  {
+                    "name": "SomniaButton",
+                    "description": "Customizable button with variants and loading states",
+                    "link": "/docs/components/somnia-button"
+                  },
+                  {
+                    "name": "GameCard",
+                    "description": "Game information card with player count and status",
+                    "link": "/docs/components/game-card"
+                  },
+                  {
+                    "name": "PlayerProfile",
+                    "description": "Comprehensive player profile with stats and achievements",
+                    "link": "/docs/components/player-profile"
+                  },
+                  {
+                    "name": "GameStats",
+                    "description": "Statistics dashboard for game metrics",
+                    "link": "/docs/components/game-stats"
+                  },
+                  {
+                    "name": "WalletConnectButton",
+                    "description": "Web3 wallet connection with network switching",
+                    "link": "/docs/components/wallet-connect-button"
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "id": "somnia-button",
+          "title": "SomniaButton",
+          "description": "Customizable button component with multiple variants",
+          "tags": ["components", "button", "interactive"],
+          "content": {
+            "title": "SomniaButton Component",
+            "description": "A customizable button component with multiple variants, sizes, loading states, and icon support. Features the SomniaForge brand gradient and professional styling.",
+            "sections": [
+              {
+                "title": "Basic Usage",
+                "type": "component-demo",
+                "component": "SomniaButton",
+                "code": "import { SomniaButton } from '@somniaforge/sdk'\n\n<SomniaButton variant=\"primary\" onClick={handleClick}>\n  Join Game\n</SomniaButton>",
+                "demo": {
+                  "component": "SomniaButton",
+                  "props": {
+                    "children": "Join Game",
+                    "variant": "primary"
+                  }
+                }
+              },
+              {
+                "title": "Props Interface",
+                "type": "props-table",
+                "interface": "SomniaButtonProps",
+                "props": [
+                  {
+                    "name": "children",
+                    "type": "React.ReactNode",
+                    "required": true,
+                    "description": "Button content"
+                  },
+                  {
+                    "name": "variant",
+                    "type": "'primary' | 'secondary' | 'outline' | 'ghost'",
+                    "required": false,
+                    "default": "primary",
+                    "description": "Button style variant"
+                  },
+                  {
+                    "name": "size",
+                    "type": "'sm' | 'md' | 'lg'",
+                    "required": false,
+                    "default": "md",
+                    "description": "Button size"
+                  },
+                  {
+                    "name": "loading",
+                    "type": "boolean",
+                    "required": false,
+                    "default": "false",
+                    "description": "Show loading state"
+                  },
+                  {
+                    "name": "disabled",
+                    "type": "boolean",
+                    "required": false,
+                    "default": "false",
+                    "description": "Disable button interaction"
+                  },
+                  {
+                    "name": "icon",
+                    "type": "React.ReactNode",
+                    "required": false,
+                    "description": "Icon element"
+                  },
+                  {
+                    "name": "iconPosition",
+                    "type": "'left' | 'right'",
+                    "required": false,
+                    "default": "left",
+                    "description": "Icon position relative to text"
+                  },
+                  {
+                    "name": "fullWidth",
+                    "type": "boolean",
+                    "required": false,
+                    "default": "false",
+                    "description": "Make button full width"
+                  },
+                  {
+                    "name": "onClick",
+                    "type": "() => void",
+                    "required": false,
+                    "description": "Click handler function"
+                  }
+                ]
+              },
+              {
+                "title": "Variants",
+                "type": "variant-showcase",
+                "component": "SomniaButton",
+                "variants": [
+                  {
+                    "name": "Primary",
+                    "props": { "variant": "primary", "children": "Primary Button" },
+                    "description": "Brand gradient background with white text"
+                  },
+                  {
+                    "name": "Secondary",
+                    "props": { "variant": "secondary", "children": "Secondary Button" },
+                    "description": "Light background with dark text"
+                  },
+                  {
+                    "name": "Outline",
+                    "props": { "variant": "outline", "children": "Outline Button" },
+                    "description": "Transparent background with brand border"
+                  },
+                  {
+                    "name": "Ghost",
+                    "props": { "variant": "ghost", "children": "Ghost Button" },
+                    "description": "Transparent background with subtle hover"
+                  }
+                ]
+              },
+              {
+                "title": "Loading States",
+                "type": "component-demo",
+                "component": "SomniaButton",
+                "code": "<SomniaButton variant=\"primary\" loading>\n  Connecting...\n</SomniaButton>",
+                "demo": {
+                  "component": "SomniaButton",
+                  "props": {
+                    "children": "Connecting...",
+                    "variant": "primary",
+                    "loading": true
+                  }
+                }
+              }
+            ]
+          }
+        },
+        {
+          "id": "game-card",
+          "title": "GameCard",
+          "description": "Card component for displaying game information",
+          "tags": ["components", "card", "games"],
+          "content": {
+            "title": "GameCard Component",
+            "description": "A card component for displaying game information including player count, entry fees, status, and action buttons. Supports multiple variants for different use cases.",
+            "sections": [
+              {
+                "title": "Basic Usage",
+                "type": "component-demo",
+                "component": "GameCard",
+                "code": "import { GameCard } from '@somniaforge/sdk'\n\n<GameCard\n  title=\"Epic Battle Arena\"\n  description=\"Fast-paced multiplayer combat\"\n  playerCount={3}\n  maxPlayers={8}\n  entryFee=\"10\"\n  status=\"waiting\"\n  onJoin={() => joinGame()}\n/>",
+                "demo": {
+                  "component": "GameCard",
+                  "props": {
+                    "title": "Epic Battle Arena",
+                    "description": "Fast-paced multiplayer combat",
+                    "playerCount": 3,
+                    "maxPlayers": 8,
+                    "entryFee": "10",
+                    "status": "waiting"
+                  }
+                }
+              },
+              {
+                "title": "Props Interface",
+                "type": "props-table",
+                "interface": "GameCardProps",
+                "props": [
+                  {
+                    "name": "title",
+                    "type": "string",
+                    "required": true,
+                    "description": "Game title"
+                  },
+                  {
+                    "name": "description",
+                    "type": "string",
+                    "required": false,
+                    "description": "Game description"
+                  },
+                  {
+                    "name": "playerCount",
+                    "type": "number",
+                    "required": false,
+                    "description": "Current number of players"
+                  },
+                  {
+                    "name": "maxPlayers",
+                    "type": "number",
+                    "required": false,
+                    "description": "Maximum number of players"
+                  },
+                  {
+                    "name": "entryFee",
+                    "type": "string",
+                    "required": false,
+                    "description": "Entry fee amount"
+                  },
+                  {
+                    "name": "prizePool",
+                    "type": "string",
+                    "required": false,
+                    "description": "Total prize pool"
+                  },
+                  {
+                    "name": "status",
+                    "type": "'waiting' | 'active' | 'finished'",
+                    "required": false,
+                    "default": "waiting",
+                    "description": "Game status"
+                  },
+                  {
+                    "name": "variant",
+                    "type": "'default' | 'featured' | 'compact'",
+                    "required": false,
+                    "default": "default",
+                    "description": "Card style variant"
+                  },
+                  {
+                    "name": "timeRemaining",
+                    "type": "string",
+                    "required": false,
+                    "description": "Time remaining for game start"
+                  },
+                  {
+                    "name": "onJoin",
+                    "type": "() => void",
+                    "required": false,
+                    "description": "Join game handler"
+                  },
+                  {
+                    "name": "onView",
+                    "type": "() => void",
+                    "required": false,
+                    "description": "View details handler"
+                  }
+                ]
+              },
+              {
+                "title": "Status Variants",
+                "type": "variant-showcase",
+                "component": "GameCard",
+                "variants": [
+                  {
+                    "name": "Waiting",
+                    "props": {
+                      "title": "Waiting Game",
+                      "status": "waiting",
+                      "playerCount": 1,
+                      "maxPlayers": 4,
+                      "entryFee": "5"
+                    },
+                    "description": "Game waiting for players to join"
+                  },
+                  {
+                    "name": "Active",
+                    "props": {
+                      "title": "Active Game",
+                      "status": "active",
+                      "playerCount": 4,
+                      "maxPlayers": 4,
+                      "timeRemaining": "2:30"
+                    },
+                    "description": "Game currently in progress"
+                  },
+                  {
+                    "name": "Finished",
+                    "props": {
+                      "title": "Completed Game",
+                      "status": "finished",
+                      "playerCount": 4,
+                      "maxPlayers": 4,
+                      "prizePool": "20"
+                    },
+                    "description": "Game completed with results"
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "id": "player-profile",
+          "title": "PlayerProfile",
+          "description": "Comprehensive player profile with statistics",
+          "tags": ["components", "profile", "stats"],
+          "content": {
+            "title": "PlayerProfile Component",
+            "description": "A comprehensive player profile component with statistics, achievements, and level progression. Supports multiple variants for different layout needs.",
+            "sections": [
+              {
+                "title": "Basic Usage",
+                "type": "component-demo",
+                "component": "PlayerProfile",
+                "code": "import { PlayerProfile } from '@somniaforge/sdk'\n\nconst playerStats = {\n  totalGames: 150,\n  gamesWon: 95,\n  gamesLost: 55,\n  winRate: 63.3,\n  totalEarnings: \"250.5\",\n  level: 15\n}\n\n<PlayerProfile\n  playerName=\"GamerPro123\"\n  playerAddress=\"0x1234...5678\"\n  stats={playerStats}\n  variant=\"card\"\n/>",
+                "demo": {
+                  "component": "PlayerProfile",
+                  "props": {
+                    "playerName": "GamerPro123",
+                    "playerAddress": "0x1234...5678",
+                    "stats": {
+                      "totalGames": 150,
+                      "gamesWon": 95,
+                      "gamesLost": 55,
+                      "winRate": 63.3,
+                      "totalEarnings": "250.5",
+                      "level": 15
+                    },
+                    "variant": "card"
+                  }
+                }
+              },
+              {
+                "title": "Props Interface",
+                "type": "props-table",
+                "interface": "PlayerProfileProps",
+                "props": [
+                  {
+                    "name": "playerAddress",
+                    "type": "string",
+                    "required": false,
+                    "description": "Player wallet address"
+                  },
+                  {
+                    "name": "playerName",
+                    "type": "string",
+                    "required": false,
+                    "description": "Player display name"
+                  },
+                  {
+                    "name": "avatar",
+                    "type": "string",
+                    "required": false,
+                    "description": "Avatar image URL"
+                  },
+                  {
+                    "name": "stats",
+                    "type": "PlayerStats",
+                    "required": false,
+                    "description": "Player statistics object"
+                  },
+                  {
+                    "name": "variant",
+                    "type": "'card' | 'inline' | 'detailed'",
+                    "required": false,
+                    "default": "card",
+                    "description": "Profile layout variant"
+                  },
+                  {
+                    "name": "showStats",
+                    "type": "boolean",
+                    "required": false,
+                    "default": "true",
+                    "description": "Show statistics section"
+                  },
+                  {
+                    "name": "showAvatar",
+                    "type": "boolean",
+                    "required": false,
+                    "default": "true",
+                    "description": "Show avatar image"
+                  },
+                  {
+                    "name": "achievements",
+                    "type": "Achievement[]",
+                    "required": false,
+                    "description": "Player achievements array"
+                  }
+                ]
+              },
+              {
+                "title": "Layout Variants",
+                "type": "variant-showcase",
+                "component": "PlayerProfile",
+                "variants": [
+                  {
+                    "name": "Card",
+                    "props": {
+                      "variant": "card",
+                      "playerName": "CardPlayer",
+                      "stats": { "totalGames": 50, "winRate": 75.0, "level": 10 }
+                    },
+                    "description": "Full card layout with all features"
+                  },
+                  {
+                    "name": "Inline",
+                    "props": {
+                      "variant": "inline",
+                      "playerName": "InlinePlayer",
+                      "stats": { "totalGames": 25, "winRate": 68.0, "level": 5 }
+                    },
+                    "description": "Horizontal layout for compact spaces"
+                  },
+                  {
+                    "name": "Detailed",
+                    "props": {
+                      "variant": "detailed",
+                      "playerName": "DetailedPlayer",
+                      "stats": { "totalGames": 200, "winRate": 82.5, "level": 20 }
+                    },
+                    "description": "Extended layout with more spacing"
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "id": "game-stats",
+          "title": "GameStats",
+          "description": "Statistics dashboard component",
+          "tags": ["components", "stats", "dashboard"],
+          "content": {
+            "title": "GameStats Component",
+            "description": "A statistics dashboard component for displaying game metrics including total games, active games, player counts, and prize pools with multiple layout variants.",
+            "sections": [
+              {
+                "title": "Basic Usage",
+                "type": "component-demo",
+                "component": "GameStats",
+                "code": "import { GameStats } from '@somniaforge/sdk'\n\n<GameStats\n  totalGames={1250}\n  activeGames={45}\n  totalPlayers={850}\n  totalPrizePool=\"15000\"\n  averageGameTime=\"8:30\"\n  variant=\"dashboard\"\n/>",
+                "demo": {
+                  "component": "GameStats",
+                  "props": {
+                    "totalGames": 1250,
+                    "activeGames": 45,
+                    "totalPlayers": 850,
+                    "totalPrizePool": "15000",
+                    "averageGameTime": "8:30",
+                    "variant": "dashboard"
+                  }
+                }
+              },
+              {
+                "title": "Props Interface",
+                "type": "props-table",
+                "interface": "GameStatsProps",
+                "props": [
+                  {
+                    "name": "totalGames",
+                    "type": "number",
+                    "required": true,
+                    "description": "Total number of games played"
+                  },
+                  {
+                    "name": "activeGames",
+                    "type": "number",
+                    "required": true,
+                    "description": "Number of currently active games"
+                  },
+                  {
+                    "name": "totalPlayers",
+                    "type": "number",
+                    "required": true,
+                    "description": "Total number of registered players"
+                  },
+                  {
+                    "name": "totalPrizePool",
+                    "type": "string",
+                    "required": true,
+                    "description": "Total prize pool amount"
+                  },
+                  {
+                    "name": "averageGameTime",
+                    "type": "string",
+                    "required": true,
+                    "description": "Average game duration"
+                  },
+                  {
+                    "name": "variant",
+                    "type": "'dashboard' | 'compact' | 'card'",
+                    "required": false,
+                    "default": "dashboard",
+                    "description": "Layout variant"
+                  }
+                ]
+              },
+              {
+                "title": "Layout Variants",
+                "type": "variant-showcase",
+                "component": "GameStats",
+                "variants": [
+                  {
+                    "name": "Dashboard",
+                    "props": {
+                      "variant": "dashboard",
+                      "totalGames": 500,
+                      "activeGames": 12,
+                      "totalPlayers": 200,
+                      "totalPrizePool": "5000",
+                      "averageGameTime": "5:45"
+                    },
+                    "description": "Grid layout for overview screens"
+                  },
+                  {
+                    "name": "Compact",
+                    "props": {
+                      "variant": "compact",
+                      "totalGames": 500,
+                      "activeGames": 12,
+                      "totalPlayers": 200,
+                      "totalPrizePool": "5000",
+                      "averageGameTime": "5:45"
+                    },
+                    "description": "Horizontal layout with minimal spacing"
+                  },
+                  {
+                    "name": "Card",
+                    "props": {
+                      "variant": "card",
+                      "totalGames": 500,
+                      "activeGames": 12,
+                      "totalPlayers": 200,
+                      "totalPrizePool": "5000",
+                      "averageGameTime": "5:45"
+                    },
+                    "description": "Wrapped in a card container"
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "id": "wallet-connect-button",
+          "title": "WalletConnectButton",
+          "description": "Web3 wallet connection button",
+          "tags": ["components", "wallet", "web3"],
+          "content": {
+            "title": "WalletConnectButton Component",
+            "description": "A wallet connection button that handles Web3 wallet integration with automatic network switching, connection states, and account display.",
+            "sections": [
+              {
+                "title": "Basic Usage",
+                "type": "component-demo",
+                "component": "WalletConnectButton",
+                "code": "import { WalletConnectButton } from '@somniaforge/sdk'\n\n<WalletConnectButton\n  onConnect={connectWallet}\n  onDisconnect={disconnectWallet}\n  isConnected={false}\n  variant=\"primary\"\n/>",
+                "demo": {
+                  "component": "WalletConnectButton",
+                  "props": {
+                    "isConnected": false,
+                    "variant": "primary"
+                  }
+                }
+              },
+              {
+                "title": "Props Interface",
+                "type": "props-table",
+                "interface": "WalletConnectButtonProps",
+                "props": [
+                  {
+                    "name": "onConnect",
+                    "type": "() => Promise<void>",
+                    "required": false,
+                    "description": "Wallet connection handler"
+                  },
+                  {
+                    "name": "onDisconnect",
+                    "type": "() => void",
+                    "required": false,
+                    "description": "Wallet disconnection handler"
+                  },
+                  {
+                    "name": "isConnected",
+                    "type": "boolean",
+                    "required": false,
+                    "default": "false",
+                    "description": "Current connection status"
+                  },
+                  {
+                    "name": "isConnecting",
+                    "type": "boolean",
+                    "required": false,
+                    "default": "false",
+                    "description": "Connection in progress state"
+                  },
+                  {
+                    "name": "account",
+                    "type": "string",
+                    "required": false,
+                    "description": "Connected wallet address"
+                  },
+                  {
+                    "name": "variant",
+                    "type": "'primary' | 'secondary' | 'outline'",
+                    "required": false,
+                    "default": "primary",
+                    "description": "Button style variant"
+                  },
+                  {
+                    "name": "size",
+                    "type": "'sm' | 'md' | 'lg'",
+                    "required": false,
+                    "default": "md",
+                    "description": "Button size"
+                  }
+                ]
+              },
+              {
+                "title": "Connection States",
+                "type": "variant-showcase",
+                "component": "WalletConnectButton",
+                "variants": [
+                  {
+                    "name": "Disconnected",
+                    "props": {
+                      "isConnected": false,
+                      "variant": "primary"
+                    },
+                    "description": "Ready to connect wallet"
+                  },
+                  {
+                    "name": "Connecting",
+                    "props": {
+                      "isConnected": false,
+                      "isConnecting": true,
+                      "variant": "primary"
+                    },
+                    "description": "Connection in progress"
+                  },
+                  {
+                    "name": "Connected",
+                    "props": {
+                      "isConnected": true,
+                      "account": "0x1234...5678",
+                      "variant": "secondary"
+                    },
+                    "description": "Wallet connected with address"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "examples",
+      "title": "Examples",
+      "icon": "Gamepad2",
+      "description": "Complete game examples",
+      "items": [
+        {
+          "id": "rock-paper-scissors",
+          "title": "Rock Paper Scissors",
+          "description": "Complete multiplayer game example",
+          "tags": ["examples", "games", "tutorial"],
+          "content": {
+            "title": "Rock Paper Scissors Example",
+            "description": "A complete multiplayer Rock Paper Scissors game implementation showcasing all SDK features including real-time events, commit-reveal mechanics, and automatic prize distribution.",
+            "sections": [
+              {
+                "title": "Complete Implementation",
+                "type": "code",
+                "code": "import { SomniaGameSDK } from '@somniaforge/sdk'\nimport { parseEther } from 'viem'\n\n// Initialize SDK\nconst sdk = new SomniaGameSDK()\nawait sdk.initialize()\n\n// Create Rock Paper Scissors manager\nconst rpsManager = new RockPaperScissorsManager(\n  sdk.webSocket,\n  CONTRACT_ADDRESS,\n  RPS_ABI\n)\n\n// Create a new game\nconst createGame = async (entryFeeETH = '0.01') => {\n  const entryFee = parseEther(entryFeeETH)\n  const sessionId = await rpsManager.createRPSGame(entryFee)\n  console.log('Game created:', sessionId)\n  return sessionId\n}\n\n// Join existing game\nconst joinGame = async (sessionId, entryFee) => {\n  await rpsManager.joinRPSGame(sessionId, entryFee)\n  console.log('Joined game:', sessionId)\n}\n\n// Make a move\nconst makeMove = async (sessionId, move) => {\n  await rpsManager.commitMove(sessionId, move)\n  console.log('Move committed:', move)\n}"
+              },
+              {
+                "title": "Real-time Event Handling",
+                "type": "code",
+                "code": "// Set up WebSocket event listeners\nconst setupEventListeners = async (sessionId) => {\n  const subId = await sdk.webSocket.subscribeToRockPaperScissorsEvents(\n    CONTRACT_ADDRESS,\n    RPS_ABI,\n    { sessionId: BigInt(sessionId) },\n    (event) => {\n      switch (event.eventName) {\n        case 'PlayerJoined':\n          console.log('Player joined!')\n          if (event.args.playerCount === 2) {\n            setGameState('committing')\n          }\n          break\n          \n        case 'MoveCommitted':\n          console.log('Move committed by:', event.args.player)\n          updateUI('opponent committed move')\n          break\n          \n        case 'GameResultDetermined':\n          console.log('Game result:', event.args)\n          displayWinner(event.args.winner, event.args.winnerMove)\n          break\n          \n        case 'AutoWithdrawal':\n          console.log('Prize withdrawn:', event.args.amount)\n          showPrizeNotification(event.args.amount)\n          break\n      }\n    }\n  )\n  \n  return subId\n}"
+              },
+              {
+                "title": "Game State Management",
+                "type": "code",
+                "code": "// React hook for game state\nconst useRockPaperScissors = () => {\n  const [gameState, setGameState] = useState('waiting')\n  const [currentSession, setCurrentSession] = useState(null)\n  const [playerMove, setPlayerMove] = useState(null)\n  const [gameResult, setGameResult] = useState(null)\n  \n  const checkGameResult = async () => {\n    if (!currentSession) return\n    \n    try {\n      const result = await rpsManager.getGameResult(currentSession)\n      if (result.completedAt > 0) {\n        setGameResult({\n          winner: result.winner,\n          winnerMove: result.winnerMove,\n          loserMove: result.loserMove,\n          prize: result.prize\n        })\n        setGameState('completed')\n      }\n    } catch (error) {\n      console.error('Error checking game result:', error)\n    }\n  }\n  \n  return {\n    gameState,\n    currentSession,\n    playerMove,\n    gameResult,\n    createGame,\n    joinGame,\n    makeMove,\n    checkGameResult\n  }\n}"
+              },
+              {
+                "title": "Key Features Demonstrated",
+                "type": "feature-list",
+                "features": [
+                  {
+                    "title": "Real-time Multiplayer",
+                    "items": [
+                      "Sub-second event notifications via WebSocket",
+                      "Automatic UI updates when opponents join/move",
+                      "Live game state synchronization"
+                    ]
+                  },
+                  {
+                    "title": "Secure Fair Play",
+                    "items": [
+                      "Commit-reveal mechanism prevents cheating",
+                      "Cryptographic move hashing with salt",
+                      "Transparent on-chain verification"
+                    ]
+                  },
+                  {
+                    "title": "Seamless UX",
+                    "items": [
+                      "Automatic prize distribution to winners",
+                      "Error recovery and reconnection handling",
+                      "Responsive design for all devices"
+                    ]
+                  }
+                ]
+              },
+              {
+                "title": "Try the Demo",
+                "type": "demo-link",
+                "link": "/demo",
+                "description": "Experience the complete Rock Paper Scissors implementation with real-time multiplayer gameplay."
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}
