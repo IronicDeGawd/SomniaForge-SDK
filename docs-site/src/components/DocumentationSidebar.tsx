@@ -63,22 +63,11 @@ const DocumentationSidebar: React.FC<DocumentationSidebarProps> = ({
 
   return (
     <>
-      <div className="lg:hidden p-4 border-b border-border bg-surface">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => setSidebarOpen(!sidebarOpen)}
-          className="flex items-center gap-2"
-        >
-          {sidebarOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
-          {sidebarOpen ? 'Close Menu' : 'Open Menu'}
-        </Button>
-      </div>
 
       <aside
         className={`${
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
-        } fixed lg:relative lg:translate-x-0 w-80 min-h-screen bg-surface border-r border-border transition-transform duration-200 ease-in-out z-30`}
+        } fixed lg:relative lg:translate-x-0 w-80 min-h-screen bg-surface border-r border-border transition-transform duration-200 ease-in-out z-30 mobile-sidebar-opaque`}
       >
         <div className="p-6">
           <div className="relative mb-6">

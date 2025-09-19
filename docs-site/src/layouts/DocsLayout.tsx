@@ -4,9 +4,11 @@ import WindowedSidebar from "@/components/WindowedSidebar";
 import DocumentationSidebar from "@/components/DocumentationSidebar";
 import DraggableWindow from "@/components/DraggableWindow";
 import DocumentationRenderer from "@/components/DocumentationRenderer";
+import MobileWindowedWarning from "@/components/MobileWindowedWarning";
 import documentationData from "@/data/documentation.json";
 import { Card } from "@/components/ui/card";
 import { Monitor } from "lucide-react";
+import { useMobileDetection } from "@/hooks/useMobileDetection";
 
 interface DocSection {
   id: string;
@@ -32,13 +34,23 @@ interface WindowData {
   position: { x: number; y: number };
 }
 
-const DocsLayout = () => {
+interface DocsLayoutProps {
+  sidebarOpen?: boolean;
+  setSidebarOpen?: (open: boolean) => void;
+}
+
+const DocsLayout: React.FC<DocsLayoutProps> = ({ sidebarOpen: propSidebarOpen, setSidebarOpen: propSetSidebarOpen }) => {
   const location = useLocation();
   const isWindowedMode = location.pathname.includes('windowed');
+  const { isMobile, isAndroid } = useMobileDetection();
 
   // Shared state
   const [searchQuery, setSearchQuery] = useState("");
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [localSidebarOpen, setLocalSidebarOpen] = useState(true);
+  
+  // Use props if provided, otherwise use local state
+  const sidebarOpen = propSidebarOpen !== undefined ? propSidebarOpen : localSidebarOpen;
+  const setSidebarOpen = propSetSidebarOpen || setLocalSidebarOpen;
 
   // Documentation mode state
   const [selectedSection, setSelectedSection] = useState("getting-started");
@@ -50,11 +62,10 @@ const DocsLayout = () => {
   const [focusedWindow, setFocusedWindow] = useState<string | null>(null);
   const [selectedWindowItem, setSelectedWindowItem] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (isWindowedMode && window.innerWidth < 768) {
-      window.location.href = '/docs';
-    }
-  }, [isWindowedMode]);
+  // Show mobile warning for windowed mode
+  if (isWindowedMode && isMobile) {
+    return <MobileWindowedWarning isAndroid={isAndroid} />;
+  }
 
   const docSections: DocSection[] = documentationData.sections as DocSection[];
   const sidebarWidth = 320;
@@ -142,7 +153,7 @@ const DocsLayout = () => {
   };
 
   return (
-    <div className={`min-h-screen bg-background pt-20 ${isWindowedMode ? 'relative' : ''}`}>
+    <div className={`min-h-screen bg-background pt-[3.5rem] ${isWindowedMode ? 'relative' : ''}`}>
       <div className="flex">
         {isWindowedMode ? (
           <WindowedSidebar
@@ -229,12 +240,6 @@ const DocsLayout = () => {
         </main>
       </div>
 
-      {!isWindowedMode && sidebarOpen && (
-        <div
-          className="fixed inset-0 bg-black bg-opacity-50 z-20 lg:hidden"
-          onClick={() => setSidebarOpen(false)}
-        />
-      )}
     </div>
   );
 };

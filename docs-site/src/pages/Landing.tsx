@@ -244,40 +244,40 @@ const gameSession = await sdk.createGameSession();
       </section>
 
       {/* Code Example Section */}
-      <section className="py-20 px-6">
-        <div className="container mx-auto">
+      <section className="py-20 px-4 sm:px-6">
+        <div className="container mx-auto max-w-full overflow-hidden">
           <div className="text-center mb-16">
-            <h2 className="text-4xl md:text-5xl font-bold font-geist mb-4 text-foreground">
+            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold font-geist mb-4 text-foreground">
               Get Started in Minutes
             </h2>
-            <p className="text-xl text-muted-foreground">
+            <p className="text-lg sm:text-xl text-muted-foreground">
               Three simple steps to your first Somnia Network game
             </p>
           </div>
 
-          <div className="grid lg:grid-cols-2 gap-8 max-w-6xl mx-auto">
+          <div className="grid lg:grid-cols-2 gap-6 sm:gap-8 max-w-6xl mx-auto">
             {/* Code Example */}
-            <Card className="professional-card p-6 professional-shadow">
-              <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center space-x-2">
-                  <GitBranch className="h-5 w-5 text-foreground-secondary" />
-                  <span className="font-mono text-sm text-foreground-secondary">
+            <Card className="professional-card p-4 sm:p-6 professional-shadow min-w-0">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 sm:mb-6 gap-3 sm:gap-0">
+                <div className="flex items-center space-x-2 min-w-0">
+                  <GitBranch className="h-4 w-4 sm:h-5 sm:w-5 text-foreground-secondary flex-shrink-0" />
+                  <span className="font-mono text-xs sm:text-sm text-foreground-secondary truncate">
                     quickstart.ts
                   </span>
                 </div>
-                <div className="flex gap-2">
-                  <Button variant="outline" size="sm" className="btn-secondary">
-                    <Copy className="mr-2 h-4 w-4" />
-                    Copy
+                <div className="flex gap-2 flex-shrink-0">
+                  <Button variant="outline" size="sm" className="btn-secondary text-xs sm:text-sm px-2 sm:px-3">
+                    <Copy className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" />
+                    <span className="hidden sm:inline">Copy</span>
                   </Button>
-                  <Button size="sm" className="btn-primary">
-                    <Play className="mr-2 h-4 w-4" />
-                    Run
+                  <Button size="sm" className="btn-primary text-xs sm:text-sm px-2 sm:px-3">
+                    <Play className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" />
+                    <span className="hidden sm:inline">Run</span>
                   </Button>
                 </div>
               </div>
 
-              <pre className="code-block overflow-x-auto">
+              <pre className="code-block overflow-x-auto text-xs sm:text-sm max-w-full">
                 {quickStartCode}
               </pre>
             </Card>

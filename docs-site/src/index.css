@@ -290,15 +290,24 @@
     background: var(--surface-secondary);
     border: 1px solid var(--border);
     border-radius: 0.5rem;
-    padding: 1rem;
+    padding: 0.75rem 1rem;
     font-family: 'JetBrains Mono', monospace;
-    font-size: 0.875rem;
-    line-height: 1.6;
+    font-size: 0.75rem;
+    line-height: 1.5;
     color: var(--foreground-secondary);
     overflow-x: auto;
     white-space: pre;
     word-wrap: break-word;
     max-width: 100%;
+    min-width: 0;
+  }
+  
+  @media (min-width: 640px) {
+    .code-block {
+      font-size: 0.875rem;
+      line-height: 1.6;
+      padding: 1rem;
+    }
   }
 
   /* Code Comments Styling */
@@ -325,8 +334,20 @@
   }
 }
 
-/* Responsive Design */
+/* Mobile Sidebar Fix */
 @media (max-width: 1024px) {
+  .mobile-sidebar-opaque {
+    background: var(--surface) !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+  
+  .dark .mobile-sidebar-opaque {
+    background: #1f1f1f !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+  
   .desktop-grid {
     grid-template-columns: 1fr;
   }

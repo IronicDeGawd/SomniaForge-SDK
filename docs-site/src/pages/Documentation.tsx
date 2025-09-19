@@ -63,7 +63,7 @@ const Documentation = () => {
   };
 
   return (
-    <div className="container mx-auto px-6 py-8 max-w-4xl">
+    <div className="container mx-auto px-4 sm:px-6 py-4 sm:py-8 max-w-4xl w-full">
       {currentItem ? (
         <div>
           {/* Breadcrumb */}
@@ -76,7 +76,7 @@ const Documentation = () => {
           </nav>
 
           {/* Content */}
-          <div className="prose prose-neutral max-w-none">
+          <div className="prose prose-neutral max-w-none prose-sm sm:prose-base w-full overflow-x-auto">
             <DocumentationRenderer
               content={currentItem.content}
               onInternalLinkClick={onInternalLinkClick}
@@ -84,8 +84,8 @@ const Documentation = () => {
           </div>
 
           {/* Footer Navigation */}
-          <div className="mt-12 pt-8 border-t border-border">
-            <div className="flex justify-between items-center">
+          <div className="mt-8 sm:mt-12 pt-6 sm:pt-8 border-t border-border">
+            <div className="flex flex-col sm:flex-row justify-between items-center gap-4 sm:gap-0">
               {previousItem ? (
                 <Button
                   variant="outline"
