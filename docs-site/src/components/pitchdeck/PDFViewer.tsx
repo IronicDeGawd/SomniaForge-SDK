@@ -36,9 +36,9 @@ export const PDFViewer = ({
 
   return (
     <div className="flex justify-center w-full">
-      <div className="relative max-w-full">
+      <div className="relative w-full max-w-full">
         {loading && (
-          <div className="absolute inset-0 z-10">
+          <div className="absolute inset-0 z-10 bg-background">
             <PDFSkeleton />
           </div>
         )}
@@ -46,7 +46,7 @@ export const PDFViewer = ({
         <div className={cn(
           "shadow-lg rounded-lg overflow-hidden bg-card transition-all duration-150 max-w-full",
           isTransitioning && "blur-sm scale-95 opacity-75",
-          loading && "opacity-0"
+          loading && "min-h-96 opacity-0"
         )}>
           <Document
             file="/pitchdeck/SomniaForge-PitchDeck.pdf"
