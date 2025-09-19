@@ -1,10 +1,31 @@
 import { useState, useEffect } from 'react'
-import { 
-  SomniaGameSDK, 
+import {
+  SomniaGameSDK,
   SomniaButton,
   SomniaColors,
-  SomniaTheme
+  SomniaTheme,
+  WalletConnectButton,
+  PlayerProfile
 } from '@somniaforge/sdk'
+import {
+  Gamepad2,
+  Mountain,
+  FileText,
+  Scissors,
+  HelpCircle,
+  Clock,
+  Plus,
+  DoorOpen,
+  Handshake,
+  Trophy,
+  Frown,
+  Zap,
+  RotateCcw,
+  CheckCircle,
+  Eye,
+  AlertTriangle,
+  Siren
+} from 'lucide-react'
 import { RPSMove } from './types/rockPaperScissors'
 import { detectAvailableWallets, switchToSomniaNetwork, addSomniaNetwork } from './utils/walletDetection'
 import { useRockPaperScissors } from './hooks/useRockPaperScissors'
@@ -26,13 +47,17 @@ interface WalletInfo {
   provider: EthereumProvider
 }
 
-const Card = ({ children }: { children: React.ReactNode }) => (
+const Card = ({ children, featured = false }: { children: React.ReactNode, featured?: boolean }) => (
   <div style={{
-    background: SomniaColors.white,
-    borderRadius: SomniaTheme.borderRadius.xl,
+    background: SomniaColors.surface,
+    borderRadius: SomniaTheme.borderRadius.lg,
     padding: SomniaTheme.spacing.lg,
-    boxShadow: SomniaTheme.shadow.md,
-    border: `1px solid ${SomniaColors.gray[200]}`,
+    boxShadow: featured ? SomniaTheme.shadow.soft : SomniaTheme.shadow.md,
+    border: featured ? `2px solid ${SomniaColors.brandPrimary}` : `1px solid ${SomniaColors.border}`,
+    fontFamily: SomniaTheme.fonts.inter,
+    ...(featured && {
+      background: `linear-gradient(135deg, ${SomniaColors.surface} 0%, ${SomniaColors.backgroundSecondary} 100%)`,
+    })
   }}>
     {children}
   </div>
@@ -161,6 +186,8 @@ function App() {
   }
 
   const handleRevealMove = async () => {
+    if (!selectedMove || !rpsGame.actions.revealMove) return
+    
     try {
       await rpsGame.actions.revealMove()
     } catch (err) {
@@ -169,107 +196,108 @@ function App() {
   }
 
   const handleForceResolve = async () => {
-    try {
-      await rpsGame.actions.forceResolveGame()
-    } catch (err) {
-      setError(`Failed to force resolve: ${err}`)
+    if (rpsGame.actions.forceResolveGame) {
+      try {
+        await rpsGame.actions.forceResolveGame()
+      } catch (err) {
+        setError(`Failed to force resolve: ${err}`)
+      }
     }
   }
 
   const handleNewGame = () => {
     setSelectedMove(null)
+    setSessionToJoin('')
     setError('')
     rpsGame.actions.resetGame()
   }
 
-  const getMoveEmoji = (move: Move | RPSMove): string => {
-    if (typeof move === 'number') {
+  const getMoveIcon = (move: Move | RPSMove, size: number = 24) => {
+    if (typeof move === 'string') {
       switch (move) {
-        case RPSMove.Rock: return '🪨'
-        case RPSMove.Paper: return '📄'
-        case RPSMove.Scissors: return '✂️'
-        default: return '❓'
+        case 'rock': return <Mountain size={size} style={{ color: SomniaColors.brandDeep }} />
+        case 'paper': return <FileText size={size} style={{ color: SomniaColors.brandSecondary }} />
+        case 'scissors': return <Scissors size={size} style={{ color: SomniaColors.brandAccent }} />
+        default: return <HelpCircle size={size} style={{ color: SomniaColors.foregroundTertiary }} />
+      }
+    } else {
+      switch (move) {
+        case RPSMove.Rock: return <Mountain size={size} style={{ color: SomniaColors.brandDeep }} />
+        case RPSMove.Paper: return <FileText size={size} style={{ color: SomniaColors.brandSecondary }} />
+        case RPSMove.Scissors: return <Scissors size={size} style={{ color: SomniaColors.brandAccent }} />
+        default: return <HelpCircle size={size} style={{ color: SomniaColors.foregroundTertiary }} />
       }
     }
-    
+
     switch (move) {
-      case 'rock': return '🪨'
-      case 'paper': return '📄'
-      case 'scissors': return '✂️'
-      default: return '❓'
+      case 'rock': return <Mountain size={size} style={{ color: SomniaColors.brandDeep }} />
+      case 'paper': return <FileText size={size} style={{ color: SomniaColors.brandSecondary }} />
+      case 'scissors': return <Scissors size={size} style={{ color: SomniaColors.brandAccent }} />
+      default: return <HelpCircle size={size} style={{ color: SomniaColors.foregroundTertiary }} />
     }
   }
 
   const getGameResultText = (): string => {
     if (!rpsGame.gameResult || !rpsGame.gameResult.players.length) return ''
-    
+
     const currentAccount = account.toLowerCase()
     const winner = rpsGame.gameResult.winner.toLowerCase()
     const isDraw = rpsGame.gameResult.isDraw
-    
-    if (isDraw) return "It's a tie! 🤝"
-    if (winner === currentAccount) return 'You win! 🎉'
-    if (winner === '0x0000000000000000000000000000000000000000') return 'Game cancelled ⚠️'
-    return 'You lose! 😢'
+    const prizeAmount = Number(rpsGame.gameResult.prizeAmount) / 1e18
+
+    if (isDraw) return `It's a tie! Each player gets ${(prizeAmount/2).toFixed(4)} STT`
+    if (winner === currentAccount) return `You win ${prizeAmount.toFixed(4)} STT!`
+    if (winner === '0x0000000000000000000000000000000000000000') return 'Game cancelled'
+    return 'You lose!'
   }
 
-  const isEligibleForWithdraw = (): boolean => {
-    if (!rpsGame.gameResult || !account) return false
-    
-    const currentAccount = account.toLowerCase()
-    const winner = rpsGame.gameResult.winner.toLowerCase()
-    const isDraw = rpsGame.gameResult.isDraw
+  const isEligibleForEmergencyWithdraw = (): boolean => {
+    if (!account) return false
     const hasBalance = rpsGame.userBalance > 0n
-    
-    const isWinnerOrDraw = (winner === currentAccount) || isDraw
-    return isWinnerOrDraw && hasBalance
+    return hasBalance
   }
 
-  const getWithdrawButtonText = (): string => {
-    if (!rpsGame.gameResult) return '💰 Withdraw'
-    
-    if (rpsGame.isTransactionPending) return '⏳ Withdrawing...'
-    
-    const isDraw = rpsGame.gameResult.isDraw
+  const getEmergencyWithdrawButtonText = (): string => {
+    if (rpsGame.isTransactionPending) return 'Withdrawing...'
+
     const balanceETH = Number(rpsGame.userBalance) / 1e18
-    
-    if (isDraw) {
-      return `💰 Withdraw Entry Fee (${balanceETH.toFixed(4)} STT)`
-    } else {
-      return `💰 Withdraw Winnings (${balanceETH.toFixed(4)} STT)`
-    }
+    return `Emergency Withdraw (${balanceETH.toFixed(4)} STT)`
   }
   const ErrorDisplay = () => {
     if (!error && !rpsGame.error) return null
-    
+
     const gameError = rpsGame.error
     const displayError = error || (gameError ? gameError.message : '')
     const actionText = gameError ? getActionText(gameError.action) : 'OK'
-    
+
     return (
       <div style={{
-        background: '#FEE2E2',
-        border: '1px solid #FECACA',
-        color: '#DC2626',
-        padding: '16px',
-        borderRadius: '8px',
-        marginBottom: '16px',
+        background: `${SomniaColors.error}15`,
+        border: `1px solid ${SomniaColors.error}40`,
+        color: SomniaColors.error,
+        padding: SomniaTheme.spacing.md,
+        borderRadius: SomniaTheme.borderRadius.lg,
+        marginBottom: SomniaTheme.spacing.md,
+        fontFamily: SomniaTheme.fonts.inter,
       }}>
-        <div style={{ 
-          fontSize: '16px', 
-          fontWeight: 'bold', 
-          marginBottom: '8px' 
+        <div style={{
+          fontSize: SomniaTheme.fontSize.base,
+          fontWeight: SomniaTheme.fontWeight.semibold,
+          marginBottom: SomniaTheme.spacing.xs,
         }}>
-          ⚠️ {gameError?.title || 'Error'}
+          <div style={{ display: 'flex', alignItems: 'center', gap: SomniaTheme.spacing.xs }}>
+            <AlertTriangle size={16} style={{ color: SomniaColors.error }} />
+            {gameError?.title || 'Error'}
+          </div>
         </div>
-        <div style={{ 
-          fontSize: '14px', 
-          marginBottom: '12px' 
+        <div style={{
+          fontSize: SomniaTheme.fontSize.sm,
+          marginBottom: SomniaTheme.spacing.sm,
         }}>
           {displayError}
         </div>
         {gameError && (
-          <button
+          <SomniaButton
             onClick={() => {
               if (gameError.action === 'retry') {
                 setError('')
@@ -280,18 +308,11 @@ function App() {
                 setError('')
               }
             }}
-            style={{
-              background: '#DC2626',
-              color: 'white',
-              border: 'none',
-              padding: '8px 16px',
-              borderRadius: '6px',
-              fontSize: '14px',
-              cursor: 'pointer',
-            }}
+            variant="outline"
+            size="sm"
           >
             {actionText}
-          </button>
+          </SomniaButton>
         )}
       </div>
     )
@@ -300,46 +321,70 @@ function App() {
   return (
     <div style={{
       minHeight: '100vh',
-      background: `linear-gradient(135deg, ${SomniaColors.somniaViolet}20, ${SomniaColors.somniaViolet}10)`,
-      padding: '20px'
+      background: `linear-gradient(135deg, ${SomniaColors.brandPrimary}08 0%, ${SomniaColors.brandSecondary}05 100%)`,
+      padding: SomniaTheme.spacing.lg,
+      fontFamily: SomniaTheme.fonts.inter,
     }}>
-      <div style={{ maxWidth: '800px', margin: '0 auto' }}>
-        <div style={{ textAlign: 'center', marginBottom: '40px' }}>
-          <h1 style={{ 
-            fontSize: '3rem', 
-            color: SomniaColors.somniaViolet,
-            margin: '0 0 16px 0',
-            fontWeight: 'bold'
+      <div style={{ maxWidth: '1024px', margin: '0 auto' }}>
+        <div style={{ textAlign: 'center', marginBottom: SomniaTheme.spacing['4xl'] }}>
+          <h1 style={{
+            fontFamily: SomniaTheme.fonts.geist,
+            fontSize: 'clamp(2.5rem, 5vw, 4rem)',
+            background: SomniaColors.primaryGradient,
+            backgroundClip: 'text',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+            marginBottom: SomniaTheme.spacing.md,
+            fontWeight: SomniaTheme.fontWeight.bold,
+            lineHeight: SomniaTheme.lineHeight.tight,
           }}>
-            🪨📄✂️ Rock Paper Scissors
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: SomniaTheme.spacing.sm }}>
+              <span>Rock Paper Scissors</span>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: SomniaTheme.spacing.sm }}>
+                <Mountain size={32} style={{ color: SomniaColors.brandDeep }} />
+                <FileText size={32} style={{ color: SomniaColors.brandSecondary }} />
+                <Scissors size={32} style={{ color: SomniaColors.brandAccent }} />
+              </div>
+            </div>
           </h1>
-          <p style={{ 
-            fontSize: '1.2rem', 
-            color: SomniaColors.gray[600],
-            margin: 0
+          <p style={{
+            fontSize: 'clamp(1rem, 2vw, 1.25rem)',
+            color: SomniaColors.foregroundSecondary,
+            lineHeight: SomniaTheme.lineHeight.relaxed,
           }}>
-            Powered by SomniaForge SDK • Real-time Web3 Gaming
+            Powered by <span style={{ color: SomniaColors.brandPrimary, fontWeight: SomniaTheme.fontWeight.semibold }}>SomniaForge SDK</span> • Real-time Web3 Gaming
           </p>
         </div>
 
         <ErrorDisplay />
         {connectionState === 'disconnected' && (
-          <Card>
-            <div style={{ textAlign: 'center', padding: '40px' }}>
-              <div style={{ fontSize: '4rem', marginBottom: '20px' }}>🔗</div>
-              <h2 style={{ color: SomniaColors.gray[800], marginBottom: '20px' }}>
+          <Card featured>
+            <div style={{ textAlign: 'center', padding: SomniaTheme.spacing['3xl'] }}>
+              <h2 style={{
+                fontFamily: SomniaTheme.fonts.geist,
+                color: SomniaColors.foreground,
+                marginBottom: SomniaTheme.spacing.lg,
+                fontSize: 'clamp(1.5rem, 3vw, 2rem)',
+                fontWeight: SomniaTheme.fontWeight.semibold,
+              }}>
                 Connect Your Wallet
               </h2>
-              <p style={{ color: SomniaColors.gray[600], marginBottom: '30px' }}>
-                Connect your wallet to start playing Rock Paper Scissors on Somnia Network
+              <p style={{
+                color: SomniaColors.foregroundSecondary,
+                marginBottom: SomniaTheme.spacing['2xl'],
+                fontSize: SomniaTheme.fontSize.base,
+                lineHeight: SomniaTheme.lineHeight.relaxed,
+                maxWidth: '400px',
+                margin: `0 auto ${SomniaTheme.spacing['2xl']} auto`,
+              }}>
+                Connect your wallet to start playing Rock Paper Scissors on the Somnia Network
               </p>
-              <SomniaButton 
-                onClick={handleWalletConnect}
-                disabled={isConnecting}
+              <WalletConnectButton
+                onConnect={handleWalletConnect}
+                isConnecting={isConnecting}
+                variant="primary"
                 size="lg"
-              >
-                {isConnecting ? '🔄 Connecting...' : '🔗 Connect Wallet'}
-              </SomniaButton>
+              />
             </div>
           </Card>
         )}
@@ -347,74 +392,115 @@ function App() {
         {connectionState === 'connected' && (
           <>
             <div style={{
-              background: SomniaColors.gray[50],
+              background: SomniaColors.surfaceSecondary,
               borderRadius: SomniaTheme.borderRadius.lg,
               padding: SomniaTheme.spacing.lg,
-              marginBottom: '30px',
+              marginBottom: SomniaTheme.spacing['2xl'],
               display: 'flex',
               justifyContent: 'space-between',
-              alignItems: 'center'
+              alignItems: 'center',
+              border: `1px solid ${SomniaColors.border}`,
             }}>
-              <div>
-                <div style={{ color: SomniaColors.gray[600], fontSize: '0.9rem' }}>
-                  Connected Account
-                </div>
-                <div style={{ 
-                  color: SomniaColors.gray[900], 
-                  fontFamily: 'monospace',
-                  fontSize: '0.9rem',
-                  fontWeight: 'bold'
+              <PlayerProfile
+                playerName={`${account.slice(0, 6)}...${account.slice(-4)}`}
+                playerAddress={account}
+                variant="inline"
+                showStats={false}
+                showAvatar={false}
+              />
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: SomniaTheme.spacing.xs }}>
+                <div style={{
+                  fontSize: SomniaTheme.fontSize.sm,
+                  color: SomniaColors.foregroundSecondary,
                 }}>
-                  {account.slice(0, 6)}...{account.slice(-4)}
+                  Balance: <span style={{ fontWeight: SomniaTheme.fontWeight.semibold }}>{balance} STT</span>
                 </div>
-                <div style={{ color: SomniaColors.gray[600], fontSize: '0.8rem' }}>
-                  Balance: {balance} STT
-                </div>
+                <WalletConnectButton
+                  onDisconnect={handleDisconnect}
+                  isConnected={true}
+                  account={account}
+                  variant="secondary"
+                  size="sm"
+                />
               </div>
-              <SomniaButton onClick={handleDisconnect} variant="secondary">
-                Disconnect
-              </SomniaButton>
             </div>
             {rpsGame.gameState === 'idle' && (
               <Card>
-                <div style={{ textAlign: 'center', padding: '40px' }}>
-                  <div style={{ fontSize: '3rem', marginBottom: '20px' }}>🎮</div>
-                  <h2 style={{ color: SomniaColors.gray[800], marginBottom: '30px' }}>
+                <div style={{ textAlign: 'center', padding: SomniaTheme.spacing['2xl'] }}>
+                  <div style={{
+                    marginBottom: SomniaTheme.spacing.lg,
+                    color: SomniaColors.brandSecondary,
+                    display: 'flex',
+                    justifyContent: 'center',
+                  }}>
+                    <Gamepad2 size={48} />
+                  </div>
+                  <h2 style={{
+                    fontFamily: SomniaTheme.fonts.geist,
+                    color: SomniaColors.foreground,
+                    marginBottom: SomniaTheme.spacing['2xl'],
+                    fontSize: 'clamp(1.25rem, 2.5vw, 1.75rem)',
+                    fontWeight: SomniaTheme.fontWeight.semibold,
+                  }}>
                     Ready to Play
                   </h2>
-                  
-                  <div style={{ 
-                    display: 'flex', 
-                    gap: '20px', 
+
+                  <div style={{
+                    display: 'flex',
+                    gap: SomniaTheme.spacing.lg,
                     justifyContent: 'center',
-                    flexWrap: 'wrap'
+                    flexWrap: 'wrap',
+                    alignItems: 'center',
                   }}>
-                    <SomniaButton 
+                    <SomniaButton
                       onClick={() => rpsGame.actions.createGame()}
                       disabled={rpsGame.isTransactionPending}
                     >
-                      {rpsGame.isTransactionPending ? '⏳ Creating...' : '🆕 Create New Game'}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: SomniaTheme.spacing.xs }}>
+                        {rpsGame.isTransactionPending ? (
+                          <><Clock size={16} style={{ color: SomniaColors.brandAccent }} /> Creating...</>
+                        ) : (
+                          <><Plus size={16} style={{ color: SomniaColors.success }} /> Create New Game</>
+                        )}
+                      </div>
                     </SomniaButton>
-                    
-                    <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+
+                    <div style={{
+                      display: 'flex',
+                      gap: SomniaTheme.spacing.sm,
+                      alignItems: 'center',
+                    }}>
                       <input
                         type="text"
                         placeholder="Session ID"
                         value={sessionToJoin}
                         onChange={(e) => setSessionToJoin(e.target.value)}
                         style={{
-                          padding: '12px',
-                          borderRadius: '8px',
-                          border: `1px solid ${SomniaColors.gray[300]}`,
-                          minWidth: '120px'
+                          padding: `${SomniaTheme.spacing.sm} ${SomniaTheme.spacing.md}`,
+                          borderRadius: SomniaTheme.borderRadius.md,
+                          border: `1px solid ${SomniaColors.border}`,
+                          background: SomniaColors.surface,
+                          color: SomniaColors.foreground,
+                          fontFamily: SomniaTheme.fonts.inter,
+                          fontSize: SomniaTheme.fontSize.sm,
+                          minWidth: '140px',
+                          maxWidth: '180px',
+                          outline: 'none',
+                          transition: 'border-color 0.2s ease-in-out',
                         }}
                       />
-                      <SomniaButton 
+                      <SomniaButton
                         onClick={() => rpsGame.actions.joinGame(sessionToJoin)}
                         disabled={!sessionToJoin.trim() || rpsGame.isTransactionPending}
                         variant="secondary"
                       >
-                        {rpsGame.isTransactionPending ? '⏳ Joining...' : '🚪 Join Game'}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: SomniaTheme.spacing.xs }}>
+                          {rpsGame.isTransactionPending ? (
+                            <><Clock size={16} style={{ color: SomniaColors.brandAccent }} /> Joining...</>
+                          ) : (
+                            <><DoorOpen size={16} style={{ color: SomniaColors.brandPrimary }} /> Join Game</>
+                          )}
+                        </div>
                       </SomniaButton>
                     </div>
                   </div>
@@ -424,44 +510,108 @@ function App() {
 
             {rpsGame.gameState === 'creating' && (
               <Card>
-                <div style={{ textAlign: 'center', padding: '40px' }}>
-                  <div style={{ fontSize: '3rem', marginBottom: '20px' }}>⏳</div>
-                  <h2>Creating Game...</h2>
+                <div style={{ textAlign: 'center', padding: SomniaTheme.spacing['2xl'] }}>
+                  <div style={{ marginBottom: SomniaTheme.spacing.lg, color: SomniaColors.brandAccent, display: 'flex', justifyContent: 'center' }}>
+                    <Clock size={48} className="animate-spin" />
+                  </div>
+                  <h2 style={{
+                    fontFamily: SomniaTheme.fonts.geist,
+                    color: SomniaColors.foreground,
+                    fontSize: 'clamp(1.25rem, 2.5vw, 1.75rem)',
+                    fontWeight: SomniaTheme.fontWeight.semibold,
+                  }}>Creating Game...</h2>
+                  <p style={{
+                    fontFamily: SomniaTheme.fonts.inter,
+                    color: SomniaColors.foregroundSecondary,
+                    marginTop: SomniaTheme.spacing.sm,
+                  }}>Setting up your game session</p>
                 </div>
               </Card>
             )}
 
             {rpsGame.gameState === 'waiting' && (
-              <Card>
-                <div style={{ textAlign: 'center', padding: '40px' }}>
-                  <div style={{ fontSize: '3rem', marginBottom: '20px' }}>⏳</div>
-                  <h2>Waiting for Opponent</h2>
-                  <p>Session ID: {rpsGame.currentSession}</p>
-                  <p>Share this ID with your opponent to let them join!</p>
+              <Card featured>
+                <div style={{ textAlign: 'center', padding: SomniaTheme.spacing['2xl'] }}>
+                  <div style={{ marginBottom: SomniaTheme.spacing.lg, color: SomniaColors.brandAccent, display: 'flex', justifyContent: 'center' }}>
+                    <Clock size={48} className="animate-spin" />
+                  </div>
+                  <h2 style={{
+                    fontFamily: SomniaTheme.fonts.geist,
+                    color: SomniaColors.foreground,
+                    marginBottom: SomniaTheme.spacing.lg,
+                    fontSize: 'clamp(1.25rem, 2.5vw, 1.75rem)',
+                    fontWeight: SomniaTheme.fontWeight.semibold,
+                  }}>Waiting for Opponent</h2>
+                  <div style={{
+                    background: SomniaColors.backgroundSecondary,
+                    border: `1px solid ${SomniaColors.border}`,
+                    borderRadius: SomniaTheme.borderRadius.lg,
+                    padding: SomniaTheme.spacing.md,
+                    marginBottom: SomniaTheme.spacing.lg,
+                  }}>
+                    <div style={{
+                      fontFamily: SomniaTheme.fonts.inter,
+                      color: SomniaColors.foregroundTertiary,
+                      fontSize: SomniaTheme.fontSize.xs,
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.05em',
+                      marginBottom: SomniaTheme.spacing.xs,
+                    }}>Session ID</div>
+                    <div style={{
+                      fontFamily: SomniaTheme.fonts.mono,
+                      fontSize: SomniaTheme.fontSize.lg,
+                      fontWeight: SomniaTheme.fontWeight.semibold,
+                      color: SomniaColors.brandPrimary,
+                    }}>{rpsGame.currentSession}</div>
+                  </div>
+                  <p style={{
+                    fontFamily: SomniaTheme.fonts.inter,
+                    color: SomniaColors.foregroundSecondary,
+                    fontSize: SomniaTheme.fontSize.sm,
+                    lineHeight: SomniaTheme.lineHeight.relaxed,
+                  }}>Share this ID with your opponent to let them join!</p>
                 </div>
               </Card>
             )}
 
             {rpsGame.gameState === 'committing' && (
               <Card>
-                <div style={{ textAlign: 'center', padding: '40px' }}>
-                  <h2 style={{ marginBottom: '30px' }}>Choose Your Move</h2>
-                  <div style={{ 
-                    display: 'flex', 
-                    gap: '20px', 
+                <div style={{ textAlign: 'center', padding: SomniaTheme.spacing['2xl'] }}>
+                  <h2 style={{
+                    marginBottom: SomniaTheme.spacing['2xl'],
+                    fontFamily: SomniaTheme.fonts.geist,
+                    color: SomniaColors.foreground,
+                    fontSize: 'clamp(1.25rem, 2.5vw, 1.75rem)',
+                    fontWeight: SomniaTheme.fontWeight.semibold,
+                  }}>Choose Your Move</h2>
+                  <div style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))',
+                    gap: SomniaTheme.spacing.lg,
                     justifyContent: 'center',
-                    flexWrap: 'wrap'
+                    maxWidth: '400px',
+                    margin: '0 auto',
                   }}>
                     {(['rock', 'paper', 'scissors'] as const).map(move => (
                       <SomniaButton
                         key={move}
                         onClick={() => makeMove(move)}
                         disabled={rpsGame.isTransactionPending}
+                        variant="outline"
                         size="lg"
+                        className="move-button"
                       >
-                        <div style={{ fontSize: '2rem' }}>{getMoveEmoji(move)}</div>
-                        <div style={{ fontSize: '1rem', textTransform: 'capitalize' }}>
-                          {move}
+                        <div style={{
+                          display: 'flex',
+                          flexDirection: 'column',
+                          alignItems: 'center',
+                          gap: SomniaTheme.spacing.xs,
+                        }}>
+                          <div style={{ display: 'flex', justifyContent: 'center' }}>{getMoveIcon(move, 32)}</div>
+                          <div style={{
+                            fontSize: SomniaTheme.fontSize.sm,
+                            textTransform: 'capitalize',
+                          }}>{move}</div>
                         </div>
                       </SomniaButton>
                     ))}
@@ -472,45 +622,93 @@ function App() {
 
             {rpsGame.gameState === 'revealing' && (
               <Card>
-                <div style={{ textAlign: 'center', padding: '40px' }}>
-                  <h2 style={{ marginBottom: '20px' }}>Reveal Phase</h2>
-                  
-                  
+                <div style={{ textAlign: 'center', padding: SomniaTheme.spacing['2xl'] }}>
+                  <h2 style={{
+                    marginBottom: SomniaTheme.spacing.lg,
+                    fontFamily: SomniaTheme.fonts.geist,
+                    color: SomniaColors.foreground,
+                    fontSize: 'clamp(1.25rem, 2.5vw, 1.75rem)',
+                    fontWeight: SomniaTheme.fontWeight.semibold,
+                  }}>Reveal Phase</h2>
+
                   {selectedMove && (
-                    <div style={{ marginBottom: '30px' }}>
-                      <p>Your move: {getMoveEmoji(selectedMove)} {selectedMove?.toUpperCase()}</p>
+                    <div style={{
+                      marginBottom: SomniaTheme.spacing['2xl'],
+                      background: SomniaColors.backgroundSecondary,
+                      border: `1px solid ${SomniaColors.border}`,
+                      borderRadius: SomniaTheme.borderRadius.lg,
+                      padding: SomniaTheme.spacing.lg,
+                    }}>
+                      <div style={{
+                        fontFamily: SomniaTheme.fonts.inter,
+                        color: SomniaColors.foregroundTertiary,
+                        fontSize: SomniaTheme.fontSize.xs,
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.05em',
+                        marginBottom: SomniaTheme.spacing.xs,
+                      }}>Your Move</div>
+                      <div style={{
+                        marginBottom: SomniaTheme.spacing.xs,
+                        display: 'flex',
+                        justifyContent: 'center',
+                      }}>{getMoveIcon(selectedMove, 32)}</div>
+                      <div style={{
+                        fontFamily: SomniaTheme.fonts.geist,
+                        fontSize: SomniaTheme.fontSize.lg,
+                        fontWeight: SomniaTheme.fontWeight.semibold,
+                        color: SomniaColors.brandPrimary,
+                        textTransform: 'uppercase',
+                      }}>{selectedMove}</div>
                     </div>
                   )}
-                  
-                  
-                  <SomniaButton
-                    onClick={handleRevealMove}
-                    disabled={rpsGame.isTransactionPending || rpsGame.hasRevealed}
-                  >
-                    {rpsGame.hasRevealed ? '✅ Move Revealed' :
-                     rpsGame.isTransactionPending ? '⏳ Revealing...' : '🎭 Reveal Move'}
-                  </SomniaButton>
+
+                  <div style={{ marginBottom: SomniaTheme.spacing.lg }}>
+                    <SomniaButton
+                      onClick={handleRevealMove}
+                      disabled={rpsGame.isTransactionPending || rpsGame.hasRevealed}
+                      size="lg"
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: SomniaTheme.spacing.xs }}>
+                        {rpsGame.hasRevealed ? (
+                          <><CheckCircle size={16} style={{ color: SomniaColors.success }} /> Move Revealed</>
+                        ) : rpsGame.isTransactionPending ? (
+                          <><Clock size={16} style={{ color: SomniaColors.brandAccent }} /> Revealing...</>
+                        ) : (
+                          <><Eye size={16} style={{ color: SomniaColors.brandPurple }} /> Reveal Move</>
+                        )}
+                      </div>
+                    </SomniaButton>
+                  </div>
 
                   {rpsGame.hasRevealed && (
-                    <div style={{ marginTop: '10px' }}>
+                    <div style={{ marginBottom: SomniaTheme.spacing.md }}>
                       <SomniaButton
                         onClick={() => rpsGame.actions.resetRevealState()}
                         variant="secondary"
                         size="sm"
                       >
-                        🔄 Reset Reveal State
+                        <div style={{ display: 'flex', alignItems: 'center', gap: SomniaTheme.spacing.xs }}>
+                          <RotateCcw size={16} style={{ color: SomniaColors.warning }} />
+                          Reset Reveal State
+                        </div>
                       </SomniaButton>
                     </div>
                   )}
-                  
+
                   {rpsGame.revealDeadline > 0 && Date.now() / 1000 > rpsGame.revealDeadline && (
-                    <div style={{ marginTop: '20px' }}>
-                      <SomniaButton 
-                        onClick={handleForceResolve} 
+                    <div>
+                      <SomniaButton
+                        onClick={handleForceResolve}
                         disabled={rpsGame.isTransactionPending}
-                        variant="secondary"
+                        variant="outline"
                       >
-                        {rpsGame.isTransactionPending ? '⏳ Resolving...' : '⚡ Force Resolve'}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: SomniaTheme.spacing.xs }}>
+                          {rpsGame.isTransactionPending ? (
+                            <><Clock size={16} style={{ color: SomniaColors.brandAccent }} /> Resolving...</>
+                          ) : (
+                            <><Zap size={16} style={{ color: SomniaColors.warning }} /> Force Resolve</>
+                          )}
+                        </div>
                       </SomniaButton>
                     </div>
                   )}
@@ -520,18 +718,29 @@ function App() {
 
             {rpsGame.gameState === 'finished' && rpsGame.gameResult && rpsGame.gameResult.players.length > 0 && (
               <Card>
-                <div style={{ textAlign: 'center', padding: '40px' }}>
-                  <div style={{ fontSize: '4rem', marginBottom: '20px' }}>
-                    {rpsGame.gameResult.isDraw ? '🤝' : 
-                     rpsGame.gameResult.winner.toLowerCase() === account.toLowerCase() ? '🎉' : '😢'}
+                <div style={{ textAlign: 'center', padding: SomniaTheme.spacing['2xl'] }}>
+                  <div style={{ marginBottom: SomniaTheme.spacing.lg, display: 'flex', justifyContent: 'center' }}>
+                    {rpsGame.gameResult.isDraw ? (
+                      <Handshake size={64} style={{ color: SomniaColors.warning }} />
+                    ) : rpsGame.gameResult.winner.toLowerCase() === account.toLowerCase() ? (
+                      <Trophy size={64} style={{ color: SomniaColors.success }} />
+                    ) : (
+                      <Frown size={64} style={{ color: SomniaColors.error }} />
+                    )}
                   </div>
                   
-                  <h2 style={{ marginBottom: '20px' }}>
+                  <h2 style={{
+                    fontFamily: SomniaTheme.fonts.geist,
+                    marginBottom: SomniaTheme.spacing.lg,
+                    color: SomniaColors.foreground,
+                    fontSize: 'clamp(1.25rem, 2.5vw, 1.75rem)',
+                    fontWeight: SomniaTheme.fontWeight.semibold,
+                  }}>
                     {getGameResultText()}
                   </h2>
                   
-                  <div style={{ marginBottom: '30px' }}>
-                    <div style={{ display: 'flex', justifyContent: 'center', gap: '40px', marginBottom: '20px' }}>
+                  <div style={{ marginBottom: SomniaTheme.spacing['2xl'] }}>
+                    <div style={{ display: 'flex', justifyContent: 'center', gap: SomniaTheme.spacing['2xl'], marginBottom: SomniaTheme.spacing.lg }}>
                       {(() => {
                         const currentAccountLower = account.toLowerCase()
                         const players = rpsGame.gameResult.players
@@ -547,17 +756,37 @@ function App() {
                         
                         return (
                           <>
-                            <div>
-                              <div style={{ fontSize: '0.9rem', color: SomniaColors.gray[600] }}>You</div>
-                              <div style={{ fontSize: '3rem' }}>
-                                {yourMove !== RPSMove.None ? getMoveEmoji(yourMove) : '❓'}
+                            <div style={{ textAlign: 'center' }}>
+                              <div style={{
+                                fontFamily: SomniaTheme.fonts.inter,
+                                fontSize: SomniaTheme.fontSize.xs,
+                                color: SomniaColors.foregroundTertiary,
+                                textTransform: 'uppercase',
+                                letterSpacing: '0.05em',
+                                marginBottom: SomniaTheme.spacing.xs,
+                              }}>You</div>
+                              <div style={{ display: 'flex', justifyContent: 'center' }}>
+                                {yourMove !== RPSMove.None ? getMoveIcon(yourMove, 48) : <HelpCircle size={48} />}
                               </div>
                             </div>
-                            <div style={{ fontSize: '2rem', alignSelf: 'center' }}>VS</div>
-                            <div>
-                              <div style={{ fontSize: '0.9rem', color: SomniaColors.gray[600] }}>Opponent</div>
-                              <div style={{ fontSize: '3rem' }}>
-                                {opponentMove !== RPSMove.None ? getMoveEmoji(opponentMove) : '❓'}
+                            <div style={{
+                              fontFamily: SomniaTheme.fonts.geist,
+                              fontSize: '2rem',
+                              alignSelf: 'center',
+                              color: SomniaColors.brandAccent,
+                              fontWeight: SomniaTheme.fontWeight.semibold,
+                            }}>VS</div>
+                            <div style={{ textAlign: 'center' }}>
+                              <div style={{
+                                fontFamily: SomniaTheme.fonts.inter,
+                                fontSize: SomniaTheme.fontSize.xs,
+                                color: SomniaColors.foregroundTertiary,
+                                textTransform: 'uppercase',
+                                letterSpacing: '0.05em',
+                                marginBottom: SomniaTheme.spacing.xs,
+                              }}>Opponent</div>
+                              <div style={{ display: 'flex', justifyContent: 'center' }}>
+                                {opponentMove !== RPSMove.None ? getMoveIcon(opponentMove, 48) : <HelpCircle size={48} />}
                               </div>
                             </div>
                           </>
@@ -565,41 +794,94 @@ function App() {
                       })()}
                     </div>
                     
-                    <p style={{ color: SomniaColors.gray[600] }}>
-                      Prize: {Number(rpsGame.gameResult.prizeAmount) / 1e18} STT
-                    </p>
+                    <div style={{
+                      background: SomniaColors.backgroundSecondary,
+                      border: `1px solid ${SomniaColors.border}`,
+                      borderRadius: SomniaTheme.borderRadius.lg,
+                      padding: SomniaTheme.spacing.md,
+                      display: 'inline-block',
+                    }}>
+                      <div style={{
+                        fontFamily: SomniaTheme.fonts.inter,
+                        color: SomniaColors.foregroundTertiary,
+                        fontSize: SomniaTheme.fontSize.xs,
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.05em',
+                        marginBottom: SomniaTheme.spacing.xs,
+                      }}>Prize Pool</div>
+                      <div style={{
+                        fontFamily: SomniaTheme.fonts.geist,
+                        fontSize: SomniaTheme.fontSize.lg,
+                        fontWeight: SomniaTheme.fontWeight.semibold,
+                        color: SomniaColors.success,
+                      }}>
+                        {Number(rpsGame.gameResult.prizeAmount) / 1e18} STT
+                      </div>
+                    </div>
                   </div>
                   
-                  <div style={{ display: 'flex', gap: '20px', justifyContent: 'center', flexWrap: 'wrap' }}>
+                  <div style={{ display: 'flex', gap: SomniaTheme.spacing.lg, justifyContent: 'center', flexWrap: 'wrap' }}>
                     <SomniaButton onClick={handleNewGame}>
-                      🔄 Play Again
+                      <div style={{ display: 'flex', alignItems: 'center', gap: SomniaTheme.spacing.xs }}>
+                        <RotateCcw size={16} style={{ color: SomniaColors.brandPrimary }} />
+                        Play Again
+                      </div>
                     </SomniaButton>
                     
-                    {isEligibleForWithdraw() && (
-                      <SomniaButton 
-                        onClick={rpsGame.actions.withdraw} 
-                        disabled={rpsGame.isTransactionPending}
-                        variant="primary"
-                      >
-                        {getWithdrawButtonText()}
-                      </SomniaButton>
-                    )}
-                    
-                    {/* Show helpful message if user expects to withdraw but can't */}
-                    {rpsGame.gameResult && !isEligibleForWithdraw() && (
+                    {/* Auto-withdrawal success message */}
+                    {rpsGame.gameResult && (
                       rpsGame.gameResult.winner.toLowerCase() === account.toLowerCase() || rpsGame.gameResult.isDraw
                     ) && rpsGame.userBalance === 0n && (
                       <div style={{
-                        padding: '12px',
-                        backgroundColor: 'rgba(255, 193, 7, 0.1)',
-                        border: '1px solid rgba(255, 193, 7, 0.3)',
-                        borderRadius: '8px',
-                        color: '#856404',
-                        fontSize: '14px',
+                        padding: SomniaTheme.spacing.sm,
+                        backgroundColor: `${SomniaColors.success}15`,
+                        border: `1px solid ${SomniaColors.success}40`,
+                        borderRadius: SomniaTheme.borderRadius.md,
+                        color: SomniaColors.success,
+                        fontSize: SomniaTheme.fontSize.sm,
                         textAlign: 'center',
-                        maxWidth: '300px'
+                        maxWidth: '300px',
+                        fontFamily: SomniaTheme.fonts.inter,
                       }}>
-                        💡 No balance available to withdraw. Funds may have been withdrawn already.
+                        <div style={{ display: 'flex', alignItems: 'center', gap: SomniaTheme.spacing.xs }}>
+                          <CheckCircle size={16} style={{ color: SomniaColors.success }} />
+                          Prize automatically transferred to your wallet!
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Emergency withdrawal for failed auto-withdrawals */}
+                    {isEligibleForEmergencyWithdraw() && (
+                      <div style={{ marginTop: SomniaTheme.spacing.md }}>
+                        <div style={{
+                          padding: SomniaTheme.spacing.xs,
+                          backgroundColor: `${SomniaColors.warning}15`,
+                          border: `1px solid ${SomniaColors.warning}40`,
+                          borderRadius: SomniaTheme.borderRadius.md,
+                          color: SomniaColors.warning,
+                          fontSize: SomniaTheme.fontSize.xs,
+                          textAlign: 'center',
+                          marginBottom: SomniaTheme.spacing.xs,
+                          fontFamily: SomniaTheme.fonts.inter,
+                        }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: SomniaTheme.spacing.xs }}>
+                            <AlertTriangle size={16} style={{ color: SomniaColors.warning }} />
+                            Auto-withdrawal failed. Use emergency withdrawal below.
+                          </div>
+                        </div>
+                        <SomniaButton
+                          onClick={rpsGame.actions.withdraw}
+                          disabled={rpsGame.isTransactionPending}
+                          variant="secondary"
+                        >
+                          <div style={{ display: 'flex', alignItems: 'center', gap: SomniaTheme.spacing.xs }}>
+                            {rpsGame.isTransactionPending ? (
+                              <><Clock size={16} style={{ color: SomniaColors.brandAccent }} /> {getEmergencyWithdrawButtonText()}</>
+                            ) : (
+                              <><Siren size={16} style={{ color: SomniaColors.error }} /> {getEmergencyWithdrawButtonText()}</>
+                            )}
+                          </div>
+                        </SomniaButton>
                       </div>
                     )}
                   </div>
@@ -608,11 +890,17 @@ function App() {
             )}
 
             {rpsGame.gameState !== 'idle' && rpsGame.gameState !== 'creating' && rpsGame.currentSession && (
-              <div style={{ marginTop: '30px' }}>
-                <h3 style={{ marginBottom: '15px', color: SomniaColors.gray[800] }}>
+              <div style={{ marginTop: SomniaTheme.spacing['4xl'] }}>
+                <h3 style={{
+                  marginBottom: SomniaTheme.spacing.md,
+                  color: SomniaColors.foreground,
+                  fontFamily: SomniaTheme.fonts.geist,
+                  fontSize: SomniaTheme.fontSize.lg,
+                  fontWeight: SomniaTheme.fontWeight.semibold,
+                }}>
                   Game Status
                 </h3>
-                <div style={{ display: 'grid', gap: '15px' }}>
+                <div style={{ display: 'grid', gap: SomniaTheme.spacing.md }}>
                   <PlayerStatus
                     playerAddress={account}
                     isConnected={true}

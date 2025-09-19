@@ -18,7 +18,7 @@ export function PlayerStatus({
   const getStatusColor = () => {
     if (!isConnected) return SomniaColors.gray[400]
     if (hasRevealedMove) return '#10B981'
-    if (hasCommittedMove) return SomniaColors.somniaViolet
+    if (hasCommittedMove) return SomniaColors.brandSecondary
     return SomniaColors.warning
   }
 
@@ -31,8 +31,8 @@ export function PlayerStatus({
 
   return (
     <div style={{
-      background: isCurrentPlayer ? `${SomniaColors.somniaViolet}10` : SomniaColors.gray[50],
-      border: `2px solid ${isCurrentPlayer ? SomniaColors.somniaViolet : SomniaColors.gray[200]}`,
+      background: isCurrentPlayer ? `${SomniaColors.brandSecondary}10` : SomniaColors.gray[50],
+      border: `2px solid ${isCurrentPlayer ? SomniaColors.brandSecondary : SomniaColors.gray[200]}`,
       borderRadius: SomniaTheme.borderRadius.lg,
       padding: SomniaTheme.spacing.md,
       display: 'flex',

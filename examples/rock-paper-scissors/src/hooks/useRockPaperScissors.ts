@@ -342,7 +342,7 @@ export function useRockPaperScissors(sdk: SomniaGameSDK | null) {
       try {
         const subId = await sdk.webSocket.subscribeToRockPaperScissorsEvents(
           ROCK_PAPER_SCISSORS_CONTRACT_ADDRESS,
-          ROCK_PAPER_SCISSORS_ABI,
+          ROCK_PAPER_SCISSORS_ABI as any,
           { sessionId: BigInt(currentSession) },
           (event) => {
             switch (event.eventName) {
@@ -395,8 +395,8 @@ export function useRockPaperScissors(sdk: SomniaGameSDK | null) {
 
               case 'AutoWithdrawal': {
                 const player = event.args.player as string
-                const amount = event.args.amount as bigint
-                const sessionId = event.args.sessionId as bigint
+                // const amount = event.args.amount as bigint
+                // const sessionId = event.args.sessionId as bigint
 
                 // Update user balance if this is for the current user
                 const account = sdk.wallet.getCurrentAccount()
@@ -410,8 +410,8 @@ export function useRockPaperScissors(sdk: SomniaGameSDK | null) {
 
               case 'WithdrawalFailed': {
                 const player = event.args.player as string
-                const amount = event.args.amount as bigint
-                const sessionId = event.args.sessionId as bigint
+                // const amount = event.args.amount as bigint
+                // const sessionId = event.args.sessionId as bigint
 
                 // Update user balance to reflect failed withdrawal
                 const account = sdk.wallet.getCurrentAccount()

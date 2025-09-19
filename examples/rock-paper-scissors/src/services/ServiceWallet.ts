@@ -1,9 +1,10 @@
-import { createWalletClient, http, parseEther } from 'viem'
+import { createWalletClient, http, parseEther, createPublicClient } from 'viem'
 import { privateKeyToAccount } from 'viem/accounts'
 import { somniaNetwork } from '@somniaforge/sdk'
 
 export class ServiceWallet {
   private walletClient
+  private publicClient
   private account
 
   constructor() {
@@ -18,6 +19,10 @@ export class ServiceWallet {
       chain: somniaNetwork,
       transport: http('https://dream-rpc.somnia.network')
     })
+    this.publicClient = createPublicClient({
+      chain: somniaNetwork,
+      transport: http('https://dream-rpc.somnia.network')
+    })
   }
 
   getAddress(): `0x${string}` {
@@ -26,8 +31,8 @@ export class ServiceWallet {
 
   async getBalance(): Promise<bigint> {
     try {
-      return await this.walletClient.getBalance({ 
-        address: this.account.address 
+      return await this.publicClient.getBalance({
+        address: this.account.address
       })
     } catch (error) {
       throw new Error(`Failed to get service wallet balance: ${error}`)

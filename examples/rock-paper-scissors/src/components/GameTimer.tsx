@@ -31,13 +31,13 @@ export function GameTimer({ deadline, onExpired }: GameTimerProps) {
 
   return (
     <div style={{
-      background: `${SomniaColors.somniaViolet}15`,
+      background: `${SomniaColors.brandAccent}15`,
       padding: '1rem',
       borderRadius: '12px',
       textAlign: 'center',
-      border: `2px solid ${SomniaColors.somniaViolet}30`
+      border: `2px solid ${SomniaColors.brandAccent}40`
     }}>
-      <div style={{ fontSize: '2rem', fontWeight: 'bold', color: SomniaColors.somniaViolet }}>
+      <div style={{ fontSize: '2rem', fontWeight: 'bold', color: SomniaColors.brandAccent }}>
         {minutes}:{seconds.toString().padStart(2, '0')}
       </div>
       <div style={{ fontSize: '0.9rem', color: SomniaColors.gray[600] }}>
